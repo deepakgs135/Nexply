@@ -11,6 +11,7 @@ from docx import Document
 def extract_text(filename: str, content: bytes) -> str:
     """Extract text from PDF, DOCX, or TXT content."""
     extension = Path(filename).suffix.lower()
+    has_extractable_text = False
 
     if extension == ".pdf":
         with pymupdf.open(stream=content, filetype="pdf") as pdf:
@@ -18,6 +19,7 @@ def extract_text(filename: str, content: bytes) -> str:
 
             for page_number, page in enumerate(pdf, start=1):
                 text = page.get_text("text").strip()
+                has_extractable_text = has_extractable_text or bool(text)
                 pages.append(f"--- Page {page_number} ---\n{text}")
 
             result = "\n\n".join(pages)
@@ -37,7 +39,7 @@ def extract_text(filename: str, content: bytes) -> str:
     else:
         raise ValueError("Unsupported file format for text extraction.")
 
-    if not result.strip():
+    if not result.strip() or (extension == ".pdf" and not has_extractable_text):
         raise ValueError(
             "No text was extracted. The file may be empty or scanned."
         )

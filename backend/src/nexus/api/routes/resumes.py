@@ -1,12 +1,13 @@
 
 from datetime import datetime, timezone
 
+from nexus.core.debug import debug_trace
 from bson import ObjectId
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from gridfs.errors import NoFile
 
 from nexus.storage.mongodb import resumes, file_bucket, save_original_file
-from nexus.storage.parser import extract_text
+from nexus.core.parser import extract_text
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
@@ -20,6 +21,7 @@ MAX_FILE_SIZE = 15 * 1024 * 1024
 
 
 @router.post("/upload", status_code=201)
+@debug_trace
 async def upload_resume(file: UploadFile = File(...)):
     filename = (file.filename or "").strip()
     extension = (
@@ -71,6 +73,7 @@ async def upload_resume(file: UploadFile = File(...)):
 
 
 @router.post("/{document_id}/parse")
+@debug_trace
 def parse_resume(document_id: str):
     if not ObjectId.is_valid(document_id):
         raise HTTPException(status_code=400, detail="Invalid document ID.")

@@ -2,10 +2,12 @@
 from nexus.core.debug import debug_trace
 import re
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class JobInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     title: str = Field(min_length=2, max_length=200)
     company: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=20, max_length=100_000)
@@ -24,6 +26,7 @@ SKILL_ALIASES = {
     "python": "Python",
     "pytorch": "PyTorch",
     "tensorflow": "TensorFlow",
+    "mongodb": "MongoDB",
     "machine learning": "Machine Learning",
     "deep learning": "Deep Learning",
     "natural language processing": "NLP",

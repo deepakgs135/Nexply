@@ -1,0 +1,28 @@
+Jordan Avery
+Email: jordan.avery@example.com
+Phone: 555-010-2048
+Location: Portland, Oregon
+
+Professional Summary
+Early-career software developer focused on backend APIs and data processing.
+
+Skills
+Python, FastAPI, MongoDB, REST APIs, Git
+
+Education
+Bachelor of Science in Computer Science, Example State University, 2024
+
+Experience
+Junior Developer, Sample Labs, June 2024 - Present
+- Built API endpoints with FastAPI.
+- Added MongoDB persistence for uploaded documents.
+
+Projects
+Resume Matcher
+Created a resume matching prototype using Python and FastAPI.
+
+Certifications
+Python Programming Certificate
+
+Languages
+English

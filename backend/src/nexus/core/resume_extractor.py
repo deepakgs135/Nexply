@@ -1,14 +1,20 @@
 
+from nexus.core.debug import debug_trace
 import json
 
 import requests
 from pydantic import ValidationError
 
+from nexus.core.config import (
+    OLLAMA_BASE_URL,
+    OLLAMA_CHAT_PATH,
+    OLLAMA_MODEL,
+    OLLAMA_TIMEOUT_SECONDS,
+)
 from nexus.core.schemas.resume import ResumeData
 
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-OLLAMA_MODEL = "qwen3.5:9b"
+OLLAMA_URL = f"{OLLAMA_BASE_URL.rstrip('/')}/{OLLAMA_CHAT_PATH.lstrip('/')}"
 
 
 RESUME_EXTRACTION_PROMPT = """
@@ -43,6 +49,7 @@ Rules:
 """
 
 
+@debug_trace
 def extract_resume_data(parsed_text: str) -> dict:
     """Extract structured resume data using local Ollama."""
     if not parsed_text or not parsed_text.strip():
@@ -68,7 +75,7 @@ def extract_resume_data(parsed_text: str) -> dict:
                 },
             ],
         },
-        timeout=180,
+        timeout=OLLAMA_TIMEOUT_SECONDS,
     )
 
     response.raise_for_status()

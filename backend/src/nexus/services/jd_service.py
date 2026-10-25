@@ -1,12 +1,15 @@
 
+from nexus.core.debug import debug_trace
 from nexus.storage.jd_repository import get_jd, update_jd
 
 
+@debug_trace
 def get_jd_details(document_id: str) -> dict | None:
     """Retrieve a job description record by its ID."""
     return get_jd(document_id)
 
 
+@debug_trace
 def save_parsed_jd(document_id: str, parsed_text: str) -> bool:
     """Save extracted job description text and update parsing status."""
     if not parsed_text or not parsed_text.strip():

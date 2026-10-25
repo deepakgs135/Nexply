@@ -1,4 +1,5 @@
 
+from nexus.core.debug import debug_trace
 from io import BytesIO
 from pathlib import Path
 
@@ -6,6 +7,7 @@ import pymupdf
 from docx import Document
 
 
+@debug_trace
 def extract_text(filename: str, content: bytes) -> str:
     """Extract text from PDF, DOCX, or TXT content."""
     extension = Path(filename).suffix.lower()

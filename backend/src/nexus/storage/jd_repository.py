@@ -1,4 +1,5 @@
 
+from nexus.core.debug import debug_trace
 from datetime import datetime, timezone
 
 from bson import ObjectId
@@ -6,12 +7,14 @@ from bson import ObjectId
 from nexus.storage.mongodb import job_descriptions
 
 
+@debug_trace
 def create_jd(record: dict) -> str:
     """Insert a job description document and return its ID."""
     result = job_descriptions.insert_one(record)
     return str(result.inserted_id)
 
 
+@debug_trace
 def get_jd(document_id: str) -> dict | None:
     """Retrieve a job description by its MongoDB ID."""
     if not ObjectId.is_valid(document_id):
@@ -20,6 +23,7 @@ def get_jd(document_id: str) -> dict | None:
     return job_descriptions.find_one({"_id": ObjectId(document_id)})
 
 
+@debug_trace
 def update_jd(document_id: str, fields: dict) -> bool:
     """Update fields in a job description document."""
     if not ObjectId.is_valid(document_id):

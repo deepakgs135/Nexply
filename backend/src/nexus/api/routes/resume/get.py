@@ -1,4 +1,5 @@
-﻿from fastapi import APIRouter, HTTPException
+from nexus.core.debug import debug_trace
+from fastapi import APIRouter, HTTPException
 
 from nexus.services.resume_service import get_resume_details
 
@@ -6,6 +7,7 @@ router = APIRouter(tags=["Resumes"])
 
 
 @router.get("/{document_id}")
+@debug_trace
 def get_resume_endpoint(document_id: str):
     """Retrieve resume metadata and extraction results."""
     resume = get_resume_details(document_id)

@@ -1,37 +1,41 @@
 
-import os
 from datetime import datetime, timezone
+
+from nexus.core.debug import debug_trace
 
 from bson import ObjectId
 from gridfs import GridFSBucket
 from pymongo import MongoClient
 
-
-MONGODB_URI = os.getenv(
-    "MONGODB_URI",
-    "mongodb://127.0.0.1:27017",
+from nexus.core.config import (
+    MONGODB_DATABASE,
+    MONGODB_GRIDFS_BUCKET,
+    MONGODB_JD_COLLECTION,
+    MONGODB_RESUME_COLLECTION,
+    MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+    MONGODB_URI,
 )
 
-DATABASE_NAME = os.getenv("MONGODB_DATABASE", "nexply")
 
 client = MongoClient(
     MONGODB_URI,
-    serverSelectionTimeoutMS=5000,
+    serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT_MS,
 )
 
-db = client[DATABASE_NAME]
+db = client[MONGODB_DATABASE]
 
 # Main application collections
-resumes = db["resume"]
-job_descriptions = db["jd"]
+resumes = db[MONGODB_RESUME_COLLECTION]
+job_descriptions = db[MONGODB_JD_COLLECTION]
 
 # Original uploaded files
 file_bucket = GridFSBucket(
     db,
-    bucket_name="document_files",
+    bucket_name=MONGODB_GRIDFS_BUCKET,
 )
 
 
+@debug_trace
 def save_original_file(
     filename: str,
     content: bytes,
@@ -44,10 +48,6 @@ def save_original_file(
     now = datetime.now(timezone.utc)
     document_id = ObjectId()
 
-    print(
-        "[DEBUG] Uploading original file to GridFS "
-        f"filename={filename!r} bytes={len(content)} uri={MONGODB_URI} db={DATABASE_NAME}"
-    )
     gridfs_file_id = file_bucket.upload_from_stream(
         filename,
         content,
@@ -73,17 +73,8 @@ def save_original_file(
     }
 
     try:
-        print(
-            "[DEBUG] GridFS upload complete "
-            f"file_id={gridfs_file_id} document_id={document_id}"
-        )
         target_collection.insert_one(record)
-        print(f"[DEBUG] Mongo insert complete document_id={document_id}")
-    except Exception as exc:
-        print(
-            f"[DEBUG] Mongo insert failed, deleting GridFS file: "
-            f"{type(exc).__name__}: {exc}"
-        )
+    except Exception:
         file_bucket.delete(gridfs_file_id)
         raise
 

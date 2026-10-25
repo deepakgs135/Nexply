@@ -1,4 +1,5 @@
 
+from nexus.core.debug import debug_trace
 from fastapi import APIRouter, HTTPException
 
 from nexus.services.resume_service import extract_resume
@@ -7,6 +8,7 @@ router = APIRouter(tags=["Resumes"])
 
 
 @router.post("/{document_id}/extract")
+@debug_trace
 def extract_resume_endpoint(document_id: str):
     """HTTP endpoint for structured resume extraction."""
     try:

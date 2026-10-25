@@ -1,15 +1,18 @@
 
+from nexus.core.debug import debug_trace
 from nexus.storage.mongodb import file_bucket
 from nexus.storage.resume_repository import get_resume, update_resume
 from nexus.core.parser import extract_text
 from nexus.core.resume_extractor import extract_resume_data
 
 
+@debug_trace
 def get_resume_details(document_id: str) -> dict | None:
     """Retrieve a resume record by its MongoDB ID."""
     return get_resume(document_id)
 
 
+@debug_trace
 def parse_resume(document_id: str) -> dict:
     """Read the original resume, extract text, and save it."""
     resume = get_resume(document_id)
@@ -66,6 +69,7 @@ def parse_resume(document_id: str) -> dict:
         raise
 
 
+@debug_trace
 def extract_resume(document_id: str) -> dict:
     """Extract structured resume data using Ollama and save it."""
     resume = get_resume(document_id)

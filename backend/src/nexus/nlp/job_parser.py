@@ -1,4 +1,5 @@
 
+from nexus.core.debug import debug_trace
 import re
 
 from pydantic import BaseModel, Field
@@ -37,6 +38,7 @@ SKILL_ALIASES = {
 }
 
 
+@debug_trace
 def extract_skills(description: str) -> list[str]:
     """Extract known skills using case-insensitive whole-word matching."""
     text = description.casefold()
@@ -51,6 +53,7 @@ def extract_skills(description: str) -> list[str]:
     return sorted(found)
 
 
+@debug_trace
 def parse_job(job: JobInput) -> JobProfile:
     return JobProfile(
         title=job.title.strip(),

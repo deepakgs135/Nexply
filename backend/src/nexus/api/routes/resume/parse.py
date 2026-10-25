@@ -1,4 +1,5 @@
-﻿from fastapi import APIRouter, HTTPException
+from nexus.core.debug import debug_trace
+from fastapi import APIRouter, HTTPException
 
 from nexus.services.resume_service import parse_resume
 
@@ -6,6 +7,7 @@ router = APIRouter(tags=["Resumes"])
 
 
 @router.post("/{document_id}/parse")
+@debug_trace
 def parse_resume_endpoint(document_id: str):
     try:
         return parse_resume(document_id)

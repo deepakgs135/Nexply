@@ -306,6 +306,21 @@ def test_ai_smart_cannot_access_another_users_resume(client, monkeypatch):
     writer.assert_not_called()
 
 
+def test_rex_rewrites_only_requested_field_from_owner_profile(client, monkeypatch):
+    source = {"structured_result": {"full_name": "Sample Candidate", "professional_summary": "Old summary."}}
+    get_record = Mock(return_value=source)
+    rewrite = Mock(return_value={"model": "llama3.1:8b", "rewritten_text": "Improved factual summary."})
+    monkeypatch.setattr(ai_resume_route, "get_resume_details", get_record)
+    monkeypatch.setattr(ai_resume_route, "rewrite_resume_text", rewrite)
+
+    response = client.post("/resumes/6add939dfffc8e3344105dd8/rex/rewrite", json={"field_path": ["professional_summary"]})
+
+    assert response.status_code == 200
+    assert response.json()["rewritten_text"] == "Improved factual summary."
+    get_record.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+    rewrite.assert_called_once_with(source["structured_result"], ["professional_summary"], None, "brief")
+
+
 def test_ai_resume_export_returns_docx_for_owned_resume(client, monkeypatch):
     monkeypatch.setattr(ai_resume_route, "get_resume_details", Mock(return_value={"structured_result": {"full_name": "Sample Candidate"}}))
     response = client.post("/resumes/6add939dfffc8e3344105dd8/ai-resume/export", json={"structured_result": {"full_name": "Sample Candidate", "skills": ["Python"]}})

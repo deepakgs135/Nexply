@@ -14,7 +14,7 @@ export function isMissingValue(value: unknown): boolean {
   return false;
 }
 
-function isMissingFieldName(key: string) {
+export function isMissingFieldName(key: string) {
   return /(?:^|[_\s-])(null|none|undefined|n\/a|na)$/i.test(key.trim());
 }
 

@@ -1,5 +1,5 @@
 import re
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,7 +10,7 @@ from nexus.api.auth import get_current_user
 from nexus.core.config import OLLAMA_RESUME_WRITER_MODEL
 from nexus.core.schemas.resume import ResumeData
 from nexus.services.resume_export import build_resume_docx
-from nexus.services.resume_writer import available_resume_models, write_resume
+from nexus.services.resume_writer import available_resume_models, rewrite_resume_text, write_resume
 from nexus.services.resume_service import get_resume_details
 
 
@@ -24,6 +24,12 @@ class AIResumeRequest(BaseModel):
 
 class ResumeExportRequest(BaseModel):
     structured_result: dict[str, Any]
+
+
+class REXRewriteRequest(BaseModel):
+    field_path: list[str | int]
+    model: str | None = None
+    style: Literal["concise", "brief", "elaborate"] = "brief"
 
 
 @router.get("/ai/models")
@@ -51,7 +57,7 @@ def generate_ai_resume(
         raise HTTPException(status_code=404, detail="Resume not found.")
     profile = record.get("structured_result")
     if not profile:
-        raise HTTPException(status_code=409, detail="Extract a structured profile before using AI Smart.")
+        raise HTTPException(status_code=409, detail="Extract a structured profile before using REX.")
     try:
         models = available_resume_models()
         model = payload.model or (OLLAMA_RESUME_WRITER_MODEL if OLLAMA_RESUME_WRITER_MODEL in models else (models[0] if models else None))
@@ -65,6 +71,28 @@ def generate_ai_resume(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"document_id": document_id, "model": model, "structured_result": generated}
+
+
+@router.post("/{document_id}/rex/rewrite")
+def rewrite_resume_field(
+    document_id: str,
+    payload: REXRewriteRequest,
+    user: Annotated[dict, Depends(get_current_user)],
+):
+    """Return a REX rewrite for one field; do not persist until the user saves."""
+    record = get_resume_details(document_id, user["app_id"])
+    if record is None:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    profile = record.get("structured_result")
+    if not profile:
+        raise HTTPException(status_code=409, detail="Extract a structured profile before using REX.")
+    try:
+        rewritten = rewrite_resume_text(profile, payload.field_path, payload.model, payload.style)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503, detail="Ollama is unavailable. Start Ollama and try again.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"document_id": document_id, **rewritten}
 
 
 @router.post("/{document_id}/ai-resume/export")

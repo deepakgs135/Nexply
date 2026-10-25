@@ -13,6 +13,7 @@ from pymongo.errors import DuplicateKeyError
 from nexus.api import auth
 from nexus.api.main import app
 from nexus.storage import mongodb, postgres, resume_repository, jd_repository
+from nexus.services import resume_service
 
 TEST_SECRET = "test-secret-key-that-is-at-least-32-bytes-long"
 TEST_APP_ID = "0e0b3552-a55d-49e9-97c2-bcc4a311a4c3"
@@ -194,6 +195,62 @@ def test_resume_and_jd_repositories_always_scope_reads_and_updates_to_app_id(mon
     jd_collection.find_one.assert_called_once_with(expected_filter)
     jd_collection.update_one.assert_called_once()
     assert jd_collection.update_one.call_args.args[0] == expected_filter
+
+
+def test_resume_history_repository_scopes_list_and_count_to_owner(monkeypatch):
+    collection = Mock()
+    cursor = Mock()
+    cursor.sort.return_value = cursor
+    cursor.skip.return_value = cursor
+    cursor.limit.return_value = cursor
+    cursor.__iter__ = Mock(return_value=iter([{"original_filename": "owned.pdf"}]))
+    collection.find.return_value = cursor
+    collection.count_documents.return_value = 1
+    monkeypatch.setattr(resume_repository, "resumes", collection)
+
+    records = resume_repository.list_resumes(TEST_APP_ID, skip=10, limit=20)
+    total = resume_repository.count_resumes(TEST_APP_ID)
+
+    assert records == [{"original_filename": "owned.pdf"}]
+    assert total == 1
+    assert collection.find.call_args.args[0] == {"app_id": TEST_APP_ID}
+    cursor.sort.assert_called_once_with("created_at", -1)
+    cursor.skip.assert_called_once_with(10)
+    cursor.limit.assert_called_once_with(20)
+    collection.count_documents.assert_called_once_with({"app_id": TEST_APP_ID})
+
+
+def test_resume_repository_delete_is_owner_scoped(monkeypatch):
+    collection = Mock()
+    collection.delete_one.return_value.deleted_count = 1
+    monkeypatch.setattr(resume_repository, "resumes", collection)
+
+    assert resume_repository.delete_resume_record("6add939dfffc8e3344105dd8", TEST_APP_ID)
+    collection.delete_one.assert_called_once_with({
+        "_id": resume_repository.ObjectId("6add939dfffc8e3344105dd8"),
+        "app_id": TEST_APP_ID,
+    })
+
+
+def test_resume_service_deletes_original_and_associated_gridfs_files(monkeypatch):
+    document_id = "6add939dfffc8e3344105dd8"
+    owner = TEST_APP_ID
+    original_id = "original-gridfs-id"
+    duplicate_id = "duplicate-gridfs-id"
+    bucket = Mock()
+    cursor = Mock()
+    cursor.__iter__ = Mock(return_value=iter([Mock(_id=duplicate_id)]))
+    bucket.find.return_value = cursor
+    monkeypatch.setattr(resume_service, "file_bucket", bucket)
+    monkeypatch.setattr(resume_service, "get_resume", Mock(return_value={"original_file_id": original_id}))
+    delete_record = Mock(return_value=True)
+    monkeypatch.setattr(resume_service, "delete_resume_record", delete_record)
+
+    assert resume_service.delete_resume(document_id, owner)
+
+    bucket.find.assert_called_once_with({"metadata.document_id": document_id, "metadata.app_id": owner})
+    assert {call.args[0] for call in bucket.delete.call_args_list} == {original_id, duplicate_id}
+    delete_record.assert_called_once_with(document_id, owner)
 
 
 @pytest.mark.parametrize("module,collection_name,create_function", [

@@ -11,7 +11,9 @@ from nexus.api.auth import router as auth_router
 from nexus.api.routes.resume.upload import router as resume_upload_router
 from nexus.api.routes.resume.parse import router as resume_parse_router
 from nexus.api.routes.resume.extract import router as resume_extract_router
+from nexus.api.routes.resume.history import router as resume_history_router
 from nexus.api.routes.resume.get import router as resume_get_router
+from nexus.api.routes.resume.ai import router as resume_ai_router
 from nexus.core.config import BACKEND_ROOT, MAX_UPLOAD_SIZE_MB
 
 FRONTEND_DIST = BACKEND_ROOT / "frontend" / "dist"
@@ -30,6 +32,8 @@ app.include_router(auth_router)
 app.include_router(resume_upload_router, prefix="/resumes")
 app.include_router(resume_parse_router, prefix="/resumes")
 app.include_router(resume_extract_router, prefix="/resumes")
+app.include_router(resume_history_router, prefix="/resumes")
+app.include_router(resume_ai_router, prefix="/resumes")
 app.include_router(resume_get_router, prefix="/resumes")
 
 

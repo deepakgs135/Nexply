@@ -1,7 +1,8 @@
 
 from nexus.core.debug import debug_trace
 from nexus.storage.mongodb import file_bucket
-from nexus.storage.resume_repository import get_resume, update_resume
+from nexus.storage.resume_repository import delete_resume_record, get_resume, update_resume
+from gridfs.errors import NoFile
 from nexus.core.parser import extract_text
 from nexus.core.resume_extractor import extract_resume_data
 
@@ -10,6 +11,35 @@ from nexus.core.resume_extractor import extract_resume_data
 def get_resume_details(document_id: str, app_id: str) -> dict | None:
     """Retrieve a resume record by its MongoDB ID."""
     return get_resume(document_id, app_id)
+
+
+@debug_trace
+def delete_resume(document_id: str, app_id: str) -> bool:
+    """Delete the owner's resume record and every GridFS original tied to it."""
+    resume = get_resume(document_id, app_id)
+    if resume is None:
+        return False
+
+    file_ids = set()
+    if resume.get("original_file_id"):
+        file_ids.add(resume["original_file_id"])
+
+    # Also clean up any duplicate original upload associated with this resume.
+    # Ownership metadata constrains the broader cleanup query.
+    for grid_file in file_bucket.find({
+        "metadata.document_id": document_id,
+        "metadata.app_id": str(app_id),
+    }):
+        file_ids.add(grid_file._id)
+
+    for file_id in file_ids:
+        try:
+            file_bucket.delete(file_id)
+        except NoFile:
+            # An already-missing GridFS file does not prevent record cleanup.
+            pass
+
+    return delete_resume_record(document_id, app_id)
 
 
 @debug_trace

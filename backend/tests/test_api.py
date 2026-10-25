@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from nexus.api.main import app
 from nexus.api.auth import get_current_user
 from nexus.api.routes.resume import extract as extract_route
+from nexus.api.routes.resume import history as history_route
+from nexus.api.routes.resume import ai as ai_resume_route
 from nexus.api.routes.resume import get as get_route
 from nexus.api.routes.resume import parse as parse_route
 from nexus.api.routes.resume import upload as upload_route
@@ -43,6 +45,8 @@ def test_openapi_documents_resume_endpoints(client):
     assert "/resumes/{document_id}/parse" in paths
     assert "/resumes/{document_id}/extract" in paths
     assert "/resumes/{document_id}" in paths
+    assert "/resumes/history" in paths
+    assert "/resumes/{document_id}/profile" in paths
 
 
 def test_root_serves_resume_workspace(client):
@@ -188,6 +192,158 @@ def test_get_endpoint_returns_resume_without_gridfs_id(client, monkeypatch):
     assert "original_file_id" not in body
     assert body["parsed_text"] == "Sample resume text"
     get_resume.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+
+
+def test_resume_history_lists_only_authenticated_owner_summaries(client, monkeypatch):
+    record = {
+        "_id": ObjectId("6add939dfffc8e3344105dd8"),
+        "original_filename": "resume.pdf",
+        "original_size_bytes": 12345,
+        "created_at": "2026-10-25T12:00:00Z",
+        "parsing_status": "completed",
+        "llm_status": "completed",
+        "structured_result": {"full_name": "Sample Candidate", "professional_title": "Engineer"},
+    }
+    list_records = Mock(return_value=[record.copy()])
+    count_records = Mock(return_value=1)
+    monkeypatch.setattr(history_route, "list_resumes", list_records)
+    monkeypatch.setattr(history_route, "count_resumes", count_records)
+
+    response = client.get("/resumes/history")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"][0]["document_id"] == "6add939dfffc8e3344105dd8"
+    assert body["items"][0]["candidate_name"] == "Sample Candidate"
+    assert "app_id" not in body["items"][0]
+    list_records.assert_called_once_with(TEST_USER["app_id"], skip=0, limit=50)
+    count_records.assert_called_once_with(TEST_USER["app_id"])
+
+
+def test_resume_history_profile_is_scoped_to_authenticated_owner(client, monkeypatch):
+    record = {
+        "_id": ObjectId("6add939dfffc8e3344105dd8"),
+        "app_id": TEST_USER["app_id"],
+        "structured_result": {"full_name": "Sample Candidate", "skills": ["Python"]},
+        "parsed_text": "private extracted source text",
+    }
+    get_record = Mock(return_value=record.copy())
+    monkeypatch.setattr(history_route, "get_resume_details", get_record)
+
+    response = client.get("/resumes/6add939dfffc8e3344105dd8/profile")
+
+    assert response.status_code == 200
+    assert response.json()["structured_result"]["skills"] == ["Python"]
+    assert "parsed_text" not in response.json()
+    get_record.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+
+
+def test_structured_profile_edit_updates_existing_owner_record(client, monkeypatch):
+    update = Mock(return_value=True)
+    monkeypatch.setattr(history_route, "update_resume", update)
+    profile = {"full_name": "Corrected Name", "websites": ["https://example.com"], "skills": ["Python"]}
+
+    response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": profile})
+
+    assert response.status_code == 200
+    assert response.json()["structured_result"]["full_name"] == "Corrected Name"
+    update.assert_called_once()
+    args = update.call_args.args
+    assert args[0] == "6add939dfffc8e3344105dd8"
+    assert args[1] == TEST_USER["app_id"]
+    assert args[2]["structured_result"]["websites"] == ["https://example.com"]
+
+
+def test_structured_profile_edit_returns_not_found_for_non_owner(client, monkeypatch):
+    update = Mock(return_value=False)
+    monkeypatch.setattr(history_route, "update_resume", update)
+
+    response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": {"full_name": "Other"}})
+
+    assert response.status_code == 404
+    update.assert_called_once()
+    assert update.call_args.args[1] == TEST_USER["app_id"]
+
+
+def test_structured_profile_edit_rejects_invalid_data(client, monkeypatch):
+    update = Mock(return_value=True)
+    monkeypatch.setattr(history_route, "update_resume", update)
+
+    response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": {"graduation_year": "not a year"}})
+
+    assert response.status_code == 422
+    update.assert_not_called()
+
+
+def test_ai_smart_uses_owner_profile_and_does_not_persist_draft(client, monkeypatch):
+    source = {"structured_result": {"full_name": "Sample Candidate", "skills": ["Python"]}}
+    generated = {"full_name": "Sample Candidate", "professional_summary": "A clearer summary.", "skills": ["Python"]}
+    get_record = Mock(return_value=source)
+    models = Mock(return_value=["llama3.1:8b", "qwen3.5:9b"])
+    writer = Mock(return_value=generated)
+    monkeypatch.setattr(ai_resume_route, "get_resume_details", get_record)
+    monkeypatch.setattr(ai_resume_route, "available_resume_models", models)
+    monkeypatch.setattr(ai_resume_route, "write_resume", writer)
+
+    response = client.post("/resumes/6add939dfffc8e3344105dd8/ai-resume", json={"model": "llama3.1:8b", "target_job_description": "Data Engineer"})
+
+    assert response.status_code == 200
+    assert response.json()["structured_result"]["professional_summary"] == "A clearer summary."
+    get_record.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+    writer.assert_called_once_with(source["structured_result"], "llama3.1:8b", "Data Engineer")
+
+
+def test_ai_smart_cannot_access_another_users_resume(client, monkeypatch):
+    get_record = Mock(return_value=None)
+    writer = Mock()
+    monkeypatch.setattr(ai_resume_route, "get_resume_details", get_record)
+    monkeypatch.setattr(ai_resume_route, "write_resume", writer)
+
+    response = client.post("/resumes/6add939dfffc8e3344105dd8/ai-resume", json={})
+
+    assert response.status_code == 404
+    get_record.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+    writer.assert_not_called()
+
+
+def test_ai_resume_export_returns_docx_for_owned_resume(client, monkeypatch):
+    monkeypatch.setattr(ai_resume_route, "get_resume_details", Mock(return_value={"structured_result": {"full_name": "Sample Candidate"}}))
+    response = client.post("/resumes/6add939dfffc8e3344105dd8/ai-resume/export", json={"structured_result": {"full_name": "Sample Candidate", "skills": ["Python"]}})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    assert response.content.startswith(b"PK")
+
+
+def test_resume_delete_removes_authenticated_users_item(client, monkeypatch):
+    delete = Mock(return_value=True)
+    monkeypatch.setattr(history_route, "delete_resume", delete)
+
+    response = client.delete("/resumes/6add939dfffc8e3344105dd8")
+
+    assert response.status_code == 204
+    delete.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
+
+
+def test_resume_delete_returns_not_found_when_record_is_not_owned(client, monkeypatch):
+    delete = Mock(return_value=False)
+    monkeypatch.setattr(history_route, "delete_resume", delete)
+
+    response = client.delete("/resumes/6add939dfffc8e3344105dd8")
+
+    assert response.status_code == 404
+
+
+def test_resume_delete_endpoint_requires_authentication(monkeypatch):
+    app.dependency_overrides.clear()
+    unauthenticated_client = TestClient(app)
+    delete = Mock(return_value=True)
+    monkeypatch.setattr(history_route, "delete_resume", delete)
+
+    response = unauthenticated_client.delete("/resumes/6add939dfffc8e3344105dd8")
+
+    assert response.status_code == 401
+    delete.assert_not_called()
 
 
 def test_resume_routes_require_authentication():

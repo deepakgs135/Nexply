@@ -9,6 +9,9 @@ from nexus.core.config import (
     OLLAMA_BASE_URL,
     OLLAMA_CHAT_PATH,
     OLLAMA_MODEL,
+    OLLAMA_NUM_PREDICT,
+    OLLAMA_TEMPERATURE,
+    OLLAMA_THINK,
     OLLAMA_TIMEOUT_SECONDS,
 )
 from nexus.core.schemas.resume import ResumeData
@@ -60,7 +63,12 @@ def extract_resume_data(parsed_text: str) -> dict:
         json={
             "model": OLLAMA_MODEL,
             "stream": False,
-            "format": "json",
+            "think": OLLAMA_THINK,
+            "format": ResumeData.model_json_schema(),
+            "options": {
+                "temperature": OLLAMA_TEMPERATURE,
+                "num_predict": OLLAMA_NUM_PREDICT,
+            },
             "messages": [
                 {
                     "role": "system",
@@ -81,13 +89,31 @@ def extract_resume_data(parsed_text: str) -> dict:
     response.raise_for_status()
     result = response.json()
 
-    try:
-        raw_json = result["message"]["content"]
-        data = json.loads(raw_json)
-        validated = ResumeData.model_validate(data)
-    except (KeyError, TypeError, json.JSONDecodeError, ValidationError) as exc:
+    message = result.get("message")
+    if not isinstance(message, dict):
+        raise ValueError("Ollama response is missing its message object.")
+
+    raw_json = message.get("content")
+    if not isinstance(raw_json, str) or not raw_json.strip():
+        done_reason = result.get("done_reason", "unknown")
         raise ValueError(
-            "Ollama returned a response that does not match the resume schema."
+            f"Ollama returned empty content (done_reason={done_reason})."
+        )
+
+    try:
+        data = json.loads(raw_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Ollama returned invalid JSON.") from exc
+
+    try:
+        validated = ResumeData.model_validate(data)
+    except ValidationError as exc:
+        issues = "; ".join(
+            f"{'.'.join(str(part) for part in issue['loc'])}: {issue['type']}"
+            for issue in exc.errors(include_input=False)
+        )
+        raise ValueError(
+            f"Ollama response does not match ResumeData: {issues}"
         ) from exc
 
     return validated.model_dump()

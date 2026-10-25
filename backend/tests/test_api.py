@@ -1,7 +1,9 @@
 from unittest.mock import Mock
+from io import BytesIO
 
 import pytest
 from bson import ObjectId
+from docx import Document
 from fastapi.testclient import TestClient
 
 from nexus.api.main import app
@@ -340,18 +342,46 @@ def test_rex_manual_profile_interview_returns_dynamic_profile(client, monkeypatc
 
 def test_rex_manual_profile_saves_owner_scoped_history_record(client, monkeypatch):
     profile = {"full_name": "Deepak Kumar", "professional_title": "Senior Engineer"}
-    create = Mock(return_value="6add939dfffc8e3344105dd8")
+    create = Mock()
+    upload = Mock(return_value=ObjectId("6add939dfffc8e3344105dd9"))
     monkeypatch.setattr(ai_resume_route, "create_resume", create)
+    monkeypatch.setattr(ai_resume_route.file_bucket, "upload_from_stream", upload)
 
     response = client.post("/resumes/manual-profile", json={"structured_result": profile})
 
     assert response.status_code == 200
-    assert response.json()["document_id"] == "6add939dfffc8e3344105dd8"
+    assert response.json()["structured_result"]["full_name"] == "Deepak Kumar"
     saved_record, owner_id = create.call_args.args
     assert saved_record["source"] == "rex_manual_profile"
-    assert saved_record["original_file_id"] is None
+    assert saved_record["original_filename"] == "Deepak-Kumar-resume.docx"
+    assert saved_record["original_content_type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    assert saved_record["original_size_bytes"] > 0
+    assert saved_record["original_file_id"] == upload.return_value
+    assert saved_record["_id"] == ObjectId(response.json()["document_id"])
     assert saved_record["structured_result"]["full_name"] == "Deepak Kumar"
     assert owner_id == TEST_USER["app_id"]
+    filename, content, metadata = upload.call_args.args[0], upload.call_args.args[1], upload.call_args.kwargs["metadata"]
+    assert filename == "Deepak-Kumar-resume.docx"
+    assert content.startswith(b"PK")
+    generated_doc = Document(BytesIO(content))
+    assert any("Senior Engineer" in paragraph.text for paragraph in generated_doc.paragraphs)
+    assert metadata["stage"] == "manual_resume"
+    assert metadata["document_id"] == response.json()["document_id"]
+    assert metadata["app_id"] == TEST_USER["app_id"]
+
+
+def test_rex_manual_profile_cleans_gridfs_file_when_record_save_fails(client, monkeypatch):
+    monkeypatch.setattr(ai_resume_route, "create_resume", Mock(side_effect=RuntimeError("database unavailable")))
+    upload = Mock(return_value=ObjectId("6add939dfffc8e3344105dd9"))
+    delete = Mock()
+    monkeypatch.setattr(ai_resume_route.file_bucket, "upload_from_stream", upload)
+    monkeypatch.setattr(ai_resume_route.file_bucket, "delete", delete)
+
+    response = client.post("/resumes/manual-profile", json={"structured_result": {"full_name": "Deepak Kumar"}})
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Unable to save the manually created resume."
+    delete.assert_called_once_with(upload.return_value)
 
 
 def test_ai_resume_export_returns_docx_for_owned_resume(client, monkeypatch):
@@ -361,6 +391,32 @@ def test_ai_resume_export_returns_docx_for_owned_resume(client, monkeypatch):
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     assert response.content.startswith(b"PK")
+
+
+def test_resume_export_returns_docx_without_existing_resume(client):
+    response = client.post("/resumes/export", json={"structured_result": {
+        "full_name": "Sample Candidate",
+        "professional_summary": "<p>Led <strong>platform delivery</strong>.</p>",
+        "skills": ["Python"],
+    }})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    assert response.headers["content-disposition"].endswith('filename="Sample-Candidate-resume.docx"')
+    assert response.content.startswith(b"PK")
+    generated_doc = Document(BytesIO(response.content))
+    paragraphs = "\n".join(paragraph.text for paragraph in generated_doc.paragraphs)
+    assert "Led platform delivery." in paragraphs
+    assert "<strong>" not in paragraphs
+
+
+def test_resume_export_requires_authentication():
+    app.dependency_overrides.clear()
+    unauthenticated_client = TestClient(app)
+
+    response = unauthenticated_client.post("/resumes/export", json={"structured_result": {"full_name": "Sample Candidate"}})
+
+    assert response.status_code == 401
 
 
 def test_resume_delete_removes_authenticated_users_item(client, monkeypatch):

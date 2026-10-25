@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { ArrowDownToLine, Check, LoaderCircle, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
-import { api } from "../shared/api";
+import { api, downloadBlob } from "../shared/api";
 import { isMissingFieldName, isMissingValue, label, objectList, stringList, valueText, type Profile, type RecordItem } from "../shared/resumeFormat";
 import RichTextEditor, { RichTextContent } from "./RichTextEditor";
 
@@ -13,7 +13,9 @@ export default function ResumeEditor({
   profile: Profile; filename?: string; documentId: string; saving: boolean; error: string;
   onChange: (path: Path, value: unknown) => void; onSave: () => void; onCancel: () => void; mode?: "edit" | "create";
 }) {
-  const additionalSectionsRef = useRef<HTMLDetailsElement>(null);
+  const additionalSectionsRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   useEffect(() => {
     document.body.classList.add("resume-editor-open");
@@ -36,7 +38,6 @@ export default function ResumeEditor({
     window.requestAnimationFrame(() => {
       const section = additionalSectionsRef.current;
       if (!section) return;
-      section.open = true;
       const entries = section.querySelectorAll<HTMLDetailsElement>(".flow-entry");
       const entry = entries[entries.length - 1];
       if (!entry) return;
@@ -46,14 +47,40 @@ export default function ResumeEditor({
     });
   }
 
+  async function exportResume() {
+    if (exporting) return;
+    setExporting(true);
+    setExportError("");
+    try {
+      const blob = await downloadBlob("/resumes/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structured_result: profile }),
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${valueText(profile.full_name).replace(/[^A-Za-z0-9_-]+/g, "-") || "candidate"}-resume.docx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (caught) {
+      setExportError(caught instanceof Error ? caught.message : "Could not export the resume.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return <div className="resume-editor-overlay">
-    <header className="resume-editor-header"><div className="resume-editor-brand"><span className="resume-editor-mark">N</span><div><span className="section-eyebrow">NEXPLY RESUME STUDIO</span><strong>{mode === "create" ? "Create your resume" : "Edit your resume"}</strong><small title={filename}>{filename || (mode === "create" ? "New resume draft" : "Structured candidate profile")}</small></div></div><div className="resume-editor-actions"><span className="resume-editor-saved"><Check size={14} /> {mode === "create" ? "Draft saves when you finish" : "Changes save to this resume"}</span><button className="resume-editor-button secondary" type="button" onClick={onCancel} disabled={saving}><X size={15} /> Cancel</button><button className="resume-editor-button secondary" type="button" onClick={() => window.print()} disabled={saving}><ArrowDownToLine size={15} /> Export PDF</button><button className="resume-editor-button primary" type="button" onClick={onSave} disabled={saving}>{saving ? "Saving…" : <><Save size={15} /> {mode === "create" ? "Save resume" : "Save changes"}</>}</button></div></header>
+    <header className="resume-editor-header"><div className="resume-editor-brand"><span className="resume-editor-mark">N</span><div><span className="section-eyebrow">NEXPLY RESUME STUDIO</span><strong>{mode === "create" ? "Create your resume" : "Edit your resume"}</strong><small title={filename}>{filename || (mode === "create" ? "New resume draft" : "Structured candidate profile")}</small></div></div><div className="resume-editor-actions"><span className="resume-editor-saved"><Check size={14} /> {mode === "create" ? "Draft saves when you finish" : "Changes save to this resume"}</span><button className="resume-editor-button secondary" type="button" onClick={onCancel} disabled={saving || exporting}><X size={15} /> Cancel</button><button className="resume-editor-button secondary" type="button" onClick={() => void exportResume()} disabled={exporting}><ArrowDownToLine size={15} /> {exporting ? "Exporting…" : "Export DOCX"}</button><button className="resume-editor-button primary" type="button" onClick={onSave} disabled={saving || exporting}>{saving ? "Saving…" : <><Save size={15} /> {mode === "create" ? "Save resume" : "Save changes"}</>}</button></div></header>
     <main className="resume-editor-main">
       <div className="resume-editor-left">
         <div className="resume-editor-content">
         <div className="resume-editor-intro"><span className="section-eyebrow">MAKE IT YOURS</span><h1>{mode === "create" ? "Build your resume" : "Edit your resume"}</h1><p>Open a section, edit its entries, and review the live resume preview as you work.</p></div>
         <nav className="resume-editor-nav" aria-label="Resume sections">{["profile", "experience", "education", "skills", "projects", "certifications", "publications", "volunteer_experience"].map((key) => <a href={`#edit-${key}`} key={key} onClick={(event) => { event.preventDefault(); const section = document.getElementById(`edit-${key}`) as HTMLDetailsElement | null; if (section) { section.open = true; section.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>{label(key)}</a>)}</nav>
         {error && <div className="ai-error resume-editor-error" role="alert">{error}</div>}
+        {exportError && <div className="ai-error resume-editor-error" role="alert">{exportError}</div>}
         <details className="resume-edit-section flow-section" id="edit-profile" open><summary><SectionTitle number="01" title="Profile" /></summary><div className="resume-edit-grid">
           <Field profile={profile} path={["full_name"]} title="Full name" onChange={onChange} onRewrite={rewriteWithRex} />
           <Field profile={profile} path={["professional_title"]} title="Professional headline" onChange={onChange} onRewrite={rewriteWithRex} />
@@ -86,7 +113,7 @@ export default function ResumeEditor({
         <StringSection profile={profile} field="references" number="12" onChange={onChange} />
         <ObjectCollection profile={profile} collection="additional_sections" number="13" title="Additional section" fields={[{ key: "title", title: "Section title" }]} lists={[{ key: "details", title: "Details", multiline: true }]} onChange={onChange} onRewrite={rewriteWithRex} sectionRef={additionalSectionsRef} hideSectionHeader hideCollectionActions />
         <button className="resume-add-content" type="button" onClick={addContent}><Plus size={22} /> Add Section</button>
-        <div className="resume-editor-donebar"><button type="button" onClick={onSave} disabled={saving}>{saving ? "Saving…" : <><Check size={17} /> Done</>}</button></div>
+        <button className="resume-editor-done-button" type="button" onClick={onSave} disabled={saving}>{saving ? "Saving…" : <><Check size={17} /> Done</>}</button>
         </div>
       </div>
       <aside className="resume-editor-right"><div className="resume-preview-heading"><div><span className="section-eyebrow">YOUR STORY AT A GLANCE</span><h2>Live preview</h2></div><span>Updates as you type</span></div><div className="resume-paper-wrap"><ResumePreview profile={profile} /></div></aside>
@@ -136,19 +163,22 @@ function StringSection({ profile, field, number, onChange }: { profile: Profile;
   return <details className="resume-edit-section flow-section" id={`edit-${field}`}><summary><SectionTitle number={number} title={label(field)} count={values.filter((item) => !isMissingValue(item)).length} /></summary><StringListEditor title={label(field)} values={values} path={[field]} onChange={onChange} /></details>;
 }
 
-function ObjectCollection({ profile, collection, number, title, fields, lists = [], onChange, onRewrite, sectionRef, hideSectionHeader = false, hideCollectionActions = false }: { profile: Profile; collection: string; number: string; title: string; fields: FieldSpec[]; lists?: Array<{ key: string; title: string; multiline?: boolean }>; onChange: (path: Path, value: unknown) => void; onRewrite: (path: Path, style: "concise" | "brief" | "detail") => Promise<string>; sectionRef?: Ref<HTMLDetailsElement>; hideSectionHeader?: boolean; hideCollectionActions?: boolean }) {
+function ObjectCollection({ profile, collection, number, title, fields, lists = [], onChange, onRewrite, sectionRef, hideSectionHeader = false, hideCollectionActions = false }: { profile: Profile; collection: string; number: string; title: string; fields: FieldSpec[]; lists?: Array<{ key: string; title: string; multiline?: boolean }>; onChange: (path: Path, value: unknown) => void; onRewrite: (path: Path, style: "concise" | "brief" | "detail") => Promise<string>; sectionRef?: Ref<HTMLDivElement>; hideSectionHeader?: boolean; hideCollectionActions?: boolean }) {
   const items = objectList(profile[collection]);
   const defaults: Record<string, Record<string, unknown>> = {
     experience: {}, education: {}, projects: { name: "" }, publications: { title: "" },
     volunteer_experience: {}, additional_sections: { title: "Custom section", details: [""] },
   };
-  return <details ref={sectionRef} open={hideSectionHeader} className={`resume-edit-section ${hideSectionHeader ? "custom-content-sections" : "flow-section"}`} id={`edit-${collection}`}>{!hideSectionHeader && <summary><SectionTitle number={number} title={title} count={items.length} /></summary>}{items.map((item, index) => {
+  const entries = items.map((item, index) => {
     const known = new Set([...fields.map((field) => field.key), ...lists.map((list) => list.key)]);
     const extras = Object.entries(item).filter(([key, value]) => !known.has(key) && key !== "model_config" && !isMissingFieldName(key) && !isMissingValue(value));
     const entryTitle = collection === "additional_sections" ? valueText(item.title) || "Custom section" : valueText(item.job_title || item.degree || item.name || item.title || item.full_name) || `${title} entry`;
     const entrySubtitle = valueText(item.company || item.institution || item.publisher || item.role);
     return <details className={`resume-entry-editor flow-entry flow-entry-${collection}`} key={index}><summary><span className="resume-entry-grip">⠿</span><span className="flow-entry-title"><strong>{entryTitle}</strong><span className="flow-entry-edit-label">Edit Entry</span>{entrySubtitle && <small>{entrySubtitle}</small>}</span><button type="button" className="flow-entry-delete" aria-label={`Remove ${title} ${index + 1}`} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onChange([collection], items.filter((_, current) => current !== index)); }}><Trash2 size={15} /></button></summary><div className="resume-edit-grid">{fields.map((field) => <Field key={field.key} profile={profile} path={[collection, index, field.key]} title={field.title || label(field.key)} multiline={field.multiline} number={field.number} onChange={onChange} onRewrite={onRewrite} />)}{lists.map((list) => <div className="resume-edit-field full-width" key={list.key}><StringListEditor title={list.title} multiline={list.multiline} values={editableListValues(item[list.key])} path={[collection, index, list.key]} onChange={onChange} /></div>)}{extras.map(([key, value]) => <Field key={key} profile={profile} path={[collection, index, key]} title={label(key)} multiline={typeof value === "string" && value.length > 100} onChange={onChange} onRewrite={onRewrite} />)}</div></details>;
-  })}{!hideCollectionActions && <div className="resume-collection-actions"><button className="resume-add-button collection-add" type="button" onClick={() => onChange([collection], [...items, structuredClone(defaults[collection] || {})])}><Plus size={16} /> Add entry</button></div>}</details>;
+  });
+  const collectionActions = !hideCollectionActions && <div className="resume-collection-actions"><button className="resume-add-button collection-add" type="button" onClick={() => onChange([collection], [...items, structuredClone(defaults[collection] || {})])}><Plus size={16} /> Add entry</button></div>;
+  if (hideSectionHeader) return <div ref={sectionRef} className="custom-content-sections" id={`edit-${collection}`}>{entries}</div>;
+  return <details className="resume-edit-section flow-section" id={`edit-${collection}`}><summary><SectionTitle number={number} title={title} count={items.length} /></summary>{entries}{collectionActions}</details>;
 }
 
 function PreviewSection({ title, children }: { title: string; children: ReactNode }) {

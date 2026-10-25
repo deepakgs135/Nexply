@@ -4,10 +4,11 @@ Date: 2026-10-25
 
 ## Result
 
-- `python -m pytest -q`: **33 passed, 1 warning**.
+- `python -m pytest -q`: **38 passed, 1 warning**.
 - Live Swagger/OpenAPI and resume endpoint flow: **upload 201, parse 200, extract 200, get 200**.
 - Live model extraction returned `llm_status=completed` and matched the fictional fixture's name, email, Python, MongoDB, education, employer, and project.
 - Direct Ollama extraction of the fictional fixture now returns the canonical complete profile and preserves all fixture facts: name, email, phone, location, summary, 5 skills, education, job dates and both responsibility bullets, project, certification, and language.
+- PDF hyperlink annotations on the existing local resume were read directly; LinkedIn, GitHub profile, LeetCode, and Portfolio URLs were detected without sending the document to an external service. GitHub repository links are excluded from the profile-link chips.
 - The end-to-end run used `nexply_human_test`; the temporary database was dropped and the test server was stopped. Existing `nexply` data was not used for the run.
 
 ## Coverage
@@ -18,7 +19,8 @@ Date: 2026-10-25
 - Job parser: case-insensitive aliases, deduplication, whole-word matching, normalized fields, and whitespace-only validation.
 - API: OpenAPI paths, root, health, upload validation, parse/extract response handling, get response, and legacy router import. Storage and model calls are mocked in API unit tests.
 - React + TypeScript UI: Vite production build, bundle serving, upload configuration, searchable structured profile table, and full-JSON export.
-- Resume schema: complete standard sections, custom section retention, nested detail aliases, literal contact recovery, and omitted experience date recovery.
+- Resume schema: complete standard sections, custom section retention (including string/object detail normalization), nested detail aliases, literal contact recovery, and omitted experience date recovery.
+- PDF parser and resume extraction: embedded profile links are retained as clickable canonical website values; the Ollama prompt is loaded from `core/prompts/resume_extraction.py`.
 - End-to-end: actual upload, parse, Ollama extraction, retrieval, inline MongoDB fields, original GridFS storage, and omission of the GridFS id from the GET response.
 
 ## Issues found and fixed

@@ -8,6 +8,7 @@ from docx import Document
 from pydantic import ValidationError
 
 from nexus.core import resume_extractor
+from nexus.core.prompts.resume_extraction import RESUME_EXTRACTION_PROMPT
 from nexus.core.parser import extract_text
 from nexus.core.schemas.resume import ResumeData
 from nexus.api.routes.resumes import router as legacy_resumes_router
@@ -62,6 +63,40 @@ def test_extract_text_from_pdf_preserves_page_markers():
     assert "--- Page 2 ---\nPython developer" in result
 
 
+def test_extract_text_includes_profile_urls_embedded_as_pdf_links():
+    document = pymupdf.open()
+    page = document.new_page()
+    page.insert_text((72, 72), "LinkedIn")
+    page.insert_link({
+        "kind": pymupdf.LINK_URI,
+        "from": pymupdf.Rect(68, 58, 120, 76),
+        "uri": "https://www.linkedin.com/in/sample-candidate",
+    })
+    content = document.tobytes()
+    document.close()
+
+    result = extract_text("resume.pdf", content)
+
+    assert "LinkedIn: https://www.linkedin.com/in/sample-candidate" in result
+
+
+def test_extract_text_ignores_github_repository_links_as_profile_links():
+    document = pymupdf.open()
+    page = document.new_page()
+    page.insert_text((72, 72), "Project repository")
+    page.insert_link({
+        "kind": pymupdf.LINK_URI,
+        "from": pymupdf.Rect(68, 58, 160, 76),
+        "uri": "https://github.com/sample-candidate/resume-project",
+    })
+    content = document.tobytes()
+    document.close()
+
+    result = extract_text("resume.pdf", content)
+
+    assert "Profile links:" not in result
+
+
 def test_extract_text_rejects_textless_scanned_pdf():
     with pytest.raises(ValueError, match="No text was extracted"):
         extract_text("scanned.pdf", make_pdf(None))
@@ -91,6 +126,20 @@ def test_resume_schema_applies_empty_defaults():
 def test_resume_schema_requires_project_name():
     with pytest.raises(ValidationError):
         ResumeData.model_validate({"projects": [{}]})
+
+
+def test_resume_extractor_normalizes_custom_section_details_to_strings():
+    payload = resume_extractor.normalize_resume_payload({
+        "additional_sections": [
+            {"title": "Tools", "details": "MATLAB, Simulink, and CAN tools"},
+            {"section_name": "Training", "content": {"course": "Safety systems", "year": 2025}},
+        ],
+    })
+    result = ResumeData.model_validate(payload)
+
+    assert result.additional_sections[0].details == ["MATLAB, Simulink, and CAN tools"]
+    assert result.additional_sections[1].title == "Training"
+    assert result.additional_sections[1].details == ['{"course": "Safety systems", "year": 2025}']
 
 
 def test_resume_schema_retains_custom_details_and_nested_fields():
@@ -158,6 +207,38 @@ def test_resume_extractor_fills_missing_experience_end_date_from_source():
     assert result["experience"][0]["end_date"] == "Present"
 
 
+def test_resume_extractor_fills_clickable_profile_links_from_source():
+    result = resume_extractor.fill_profile_links_from_source(
+        {"websites": []},
+        "School: https://www.cit.edu.in\n"
+        "Profile links:\n"
+        "LinkedIn: https://linkedin.com/in/sample\n"
+        "GitHub: https://github.com/sample\n"
+        "LeetCode: https://leetcode.com/sample\n"
+        "Portfolio: https://sample-portfolio.lovable.app\n"
+        "Project repository: https://github.com/sample/project",
+    )
+
+    assert [value.split(": ", 1)[0] for value in result["websites"]] == [
+        "LinkedIn", "GitHub", "LeetCode", "Portfolio",
+    ]
+    assert all("https://" in value for value in result["websites"])
+
+
+def test_resume_extractor_normalizes_website_alias_dictionary():
+    result = resume_extractor.normalize_resume_payload({
+        "social_links": {
+            "linkedin": "https://linkedin.com/in/sample",
+            "github": "https://github.com/sample",
+        },
+    })
+
+    assert result["websites"] == [
+        "Linkedin: https://linkedin.com/in/sample",
+        "Github: https://github.com/sample",
+    ]
+
+
 def test_legacy_resume_route_module_imports():
     paths = {route.path for route in legacy_resumes_router.routes}
 
@@ -183,6 +264,7 @@ def test_resume_extractor_sends_constrained_non_thinking_request(monkeypatch):
     request = post.call_args.kwargs
     assert request["json"]["think"] is False
     assert request["json"]["format"] == ResumeData.model_json_schema()
+    assert request["json"]["messages"][0]["content"] == RESUME_EXTRACTION_PROMPT
     assert request["json"]["options"]["num_predict"] > 0
 
 

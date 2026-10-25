@@ -3,6 +3,7 @@ from nexus.core.debug import debug_trace
 import json
 import re
 from collections.abc import Mapping
+from urllib.parse import urlparse
 
 import requests
 from pydantic import ValidationError
@@ -17,35 +18,10 @@ from nexus.core.config import (
     OLLAMA_TIMEOUT_SECONDS,
 )
 from nexus.core.schemas.resume import ResumeData
+from nexus.core.prompts.resume_extraction import RESUME_EXTRACTION_PROMPT
 
 
 OLLAMA_URL = f"{OLLAMA_BASE_URL.rstrip('/')}/{OLLAMA_CHAT_PATH.lstrip('/')}"
-
-
-RESUME_EXTRACTION_PROMPT = """
-You are a meticulous resume data extraction system. Build a complete candidate
-profile from the entire source, not a short summary. Read every page and section,
-including headers, footers, sidebars, tables, and bullet lists when their text is
-present in the source.
-
-Capture every source-supported detail in the matching field. Preserve all work
-history entries, date ranges, locations, role titles, responsibilities, results,
-metrics, technologies, education, coursework, grades, certificates (including
-issuer/date when shown), projects, links, languages, awards, publications,
-volunteer work, interests, and other named resume sections. Keep separate items
-separate. Do not collapse a detailed list into a vague summary. Keep meaningful
-phrasing and numbers intact. Dates should remain strings in their original form.
-
-Never infer or invent a value. Use null for an unavailable scalar and [] for an
-unavailable list. Put factual sections that do not fit standard fields into
-additional_sections with their original title and all details. Retain exact URLs
-and contact values. Do not include parsed source text in the JSON.
-
-Return only the JSON object matching the supplied ResumeData schema. A project
-must include its source name; publication and custom section entries must include
-their source title. graduation_year must be an integer or null. Do not use
-Markdown fences, explanations, or ungrounded demographic or suitability claims.
-"""
 
 
 def _first(source: Mapping, *keys: str):
@@ -85,6 +61,18 @@ def _normalize_items(items, aliases: dict[str, tuple[str, ...]]):
                 entry.pop(alias, None)
         normalized.append(entry)
     return normalized
+
+
+def _detail_strings(value) -> list[str]:
+    """Convert variable LLM detail shapes into the schema's list of strings."""
+    if value is None or value == "":
+        return []
+    values = value if isinstance(value, list) else [value]
+    return [
+        item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
+        for item in values
+        if item is not None and item != ""
+    ]
 
 
 def normalize_resume_payload(data: dict) -> dict:
@@ -139,6 +127,15 @@ def normalize_resume_payload(data: dict) -> dict:
         for alias in aliases:
             normalized.pop(alias, None)
 
+    website_values = normalized.get("websites")
+    if isinstance(website_values, str):
+        normalized["websites"] = [website_values]
+    elif isinstance(website_values, dict):
+        normalized["websites"] = [
+            f"{key.replace('_', ' ').title()}: {value}" if isinstance(value, str) else json.dumps({key: value}, ensure_ascii=False)
+            for key, value in website_values.items()
+        ]
+
     normalized["education"] = _normalize_items(normalized.get("education"), {
         "degree": ("degree_name", "qualification", "program"),
         "field_of_study": ("major", "field", "specialization"),
@@ -175,20 +172,41 @@ def normalize_resume_payload(data: dict) -> dict:
         "responsibilities": ("duties", "contributions"),
     })
     custom_sections = normalized.get("additional_sections")
-    if isinstance(custom_sections, list):
-        converted_sections = []
-        for section in custom_sections:
-            if isinstance(section, str):
-                converted_sections.append({"title": "Additional information", "details": [section]})
-            elif isinstance(section, dict):
-                converted_sections.append({
-                    **section,
-                    "title": _first(section, "title", "section_name", "name", "heading") or "Additional information",
-                    "details": _first(section, "details", "content", "items", "bullets", "description") or [],
-                })
-            else:
-                converted_sections.append(section)
-        normalized["additional_sections"] = converted_sections
+    if isinstance(custom_sections, str):
+        custom_sections = [{"title": "Additional information", "details": custom_sections}]
+    elif isinstance(custom_sections, dict):
+        if any(key in custom_sections for key in ("title", "section_name", "name", "heading")):
+            custom_sections = [custom_sections]
+        else:
+            custom_sections = [
+                {"title": key.replace("_", " ").title(), "details": value}
+                for key, value in custom_sections.items()
+            ]
+    elif not isinstance(custom_sections, list):
+        custom_sections = []
+
+    converted_sections = []
+    for section in custom_sections:
+        if isinstance(section, str):
+            converted_sections.append({"title": "Additional information", "details": _detail_strings(section)})
+        elif isinstance(section, dict):
+            converted = dict(section)
+            converted["title"] = str(
+                _first(section, "title", "section_name", "name", "heading")
+                or "Additional information"
+            )
+            detail_value = _first(section, "details", "content", "items", "bullets", "description")
+            converted["details"] = _detail_strings(detail_value)
+            for alias in ("section_name", "heading", "content", "items", "bullets", "description"):
+                converted.pop(alias, None)
+            normalized_section = converted
+            converted_sections.append(normalized_section)
+        else:
+            converted_sections.append({
+                "title": "Additional information",
+                "details": _detail_strings(section),
+            })
+    normalized["additional_sections"] = converted_sections
 
     for field in ("certifications", "languages", "skills", "websites", "awards", "interests", "references"):
         values = normalized.get(field)
@@ -245,6 +263,63 @@ def fill_contact_from_source(data: dict, parsed_text: str) -> dict:
                     and re.fullmatch(r"[\w.'’\-]+(?:\s+[\w.'’\-]+){1,4}", heading)
                     and "@" not in heading and not re.search(r"\d", heading)):
                 data["full_name"] = heading
+    return data
+
+
+@debug_trace
+def fill_profile_links_from_source(data: dict, parsed_text: str) -> dict:
+    """Keep clickable professional profile URLs found in PDF annotations or text."""
+    url_pattern = re.compile(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+", re.I)
+    label_pattern = re.compile(r"(?i)(linkedin|github|leetcode|gitlab|kaggle|behance|dribbble|medium|portfolio|personal website|website)\s*[:|—-]\s*(https?://[^\s<>\"']+|www\.[^\s<>\"']+)")
+
+    def tidy(url: str) -> str:
+        return url.rstrip(".,;:!?)»]")
+
+    def platform_for(url: str, explicit: str = "") -> str | None:
+        parsed_url = urlparse(url if "://" in url else f"https://{url}")
+        host = (parsed_url.hostname or "").lower().removeprefix("www.")
+        for domain, title in {
+            "linkedin.com": "LinkedIn", "github.com": "GitHub", "leetcode.com": "LeetCode",
+            "gitlab.com": "GitLab", "kaggle.com": "Kaggle", "behance.net": "Behance",
+            "dribbble.com": "Dribbble", "medium.com": "Medium", "scholar.google.com": "Google Scholar",
+        }.items():
+            if host == domain or host.endswith(f".{domain}"):
+                if title == "GitHub" and len([part for part in parsed_url.path.split("/") if part]) > 1:
+                    return None
+                return title
+        if "portfolio" in host or explicit.casefold() == "portfolio":
+            return "Portfolio"
+        if explicit.casefold() in {"personal website", "website"}:
+            return "Website"
+        return None
+
+    found: list[str] = []
+    source_lines = parsed_text.splitlines()
+    for line in source_lines:
+        for match in label_pattern.finditer(line):
+            url = tidy(match.group(2))
+            title = platform_for(url, match.group(1))
+            if title:
+                found.append(f"{title}: {url}")
+        for match in url_pattern.finditer(line):
+            url = tidy(match.group(0))
+            title = platform_for(url)
+            if title:
+                found.append(f"{title}: {url}")
+
+    for value in data.get("websites", []):
+        if not isinstance(value, str):
+            continue
+        match = url_pattern.search(value)
+        if not match:
+            continue
+        url = tidy(match.group(0))
+        explicit = value[:match.start()].strip(" :|—-")
+        title = platform_for(url, explicit)
+        if title:
+            found.append(f"{title}: {url}")
+
+    data["websites"] = list(dict.fromkeys(found))
     return data
 
 
@@ -345,6 +420,7 @@ def extract_resume_data(parsed_text: str) -> dict:
 
     data = normalize_resume_payload(data)
     data = fill_contact_from_source(data, parsed_text)
+    data = fill_profile_links_from_source(data, parsed_text)
     data = fill_experience_dates_from_source(data, parsed_text)
 
     try:

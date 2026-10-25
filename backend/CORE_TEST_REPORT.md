@@ -4,7 +4,7 @@ Date: 2026-10-25
 
 ## Result
 
-- `python -m pytest -q`: **38 passed, 1 warning**.
+- `python -m pytest -q`: **56 passed, 1 warning**.
 - Live Swagger/OpenAPI and resume endpoint flow: **upload 201, parse 200, extract 200, get 200**.
 - Live model extraction returned `llm_status=completed` and matched the fictional fixture's name, email, Python, MongoDB, education, employer, and project.
 - Direct Ollama extraction of the fictional fixture now returns the canonical complete profile and preserves all fixture facts: name, email, phone, location, summary, 5 skills, education, job dates and both responsibility bullets, project, certification, and language.
@@ -22,6 +22,7 @@ Date: 2026-10-25
 - Resume schema: complete standard sections, custom section retention (including string/object detail normalization), nested detail aliases, literal contact recovery, and omitted experience date recovery.
 - PDF parser and resume extraction: embedded profile links are retained as clickable canonical website values; the Ollama prompt is loaded from `core/prompts/resume_extraction.py`.
 - End-to-end: actual upload, parse, Ollama extraction, retrieval, inline MongoDB fields, original GridFS storage, and omission of the GridFS id from the GET response.
+- Authentication: registration validation and Argon2id hashing, duplicate rejection, credential verification, inactive-user rejection, signed token signature/expiry checks, `/auth/me`, protected route enforcement, and MongoDB/GridFS owner scoping.
 
 ## Issues found and fixed
 
@@ -35,4 +36,5 @@ Date: 2026-10-25
 - Scanned PDFs still need OCR to extract their image text; they now fail clearly instead of appearing to parse successfully.
 - The skill extractor is dictionary-based, so skills absent from `SKILL_ALIASES` will not be recognized automatically.
 - Pytest reports a Starlette deprecation warning: its `TestClient` currently uses `httpx`; the warning recommends `httpx2`. The tests pass despite this warning.
-- The legacy `api/routes/resumes.py` implementation remains separate and is not mounted by `api/main.py`; keep it aligned or remove it when consolidating routes.
+- The legacy `api/routes/resumes.py` implementation remains separate and is not mounted by `api/main.py`; its resume read/write operations now also require authentication and include owner filters.
+- PostgreSQL identity tests mock the repository because this local `.env` has no `DATABASE_URL` or `JWT_SECRET_KEY`; a read-only connection attempt confirmed PostgreSQL requires the `nexply_app` password. No PostgreSQL schema or user records were changed during this implementation.

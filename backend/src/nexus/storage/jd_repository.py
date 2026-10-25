@@ -15,16 +15,16 @@ def create_jd(record: dict) -> str:
 
 
 @debug_trace
-def get_jd(document_id: str) -> dict | None:
+def get_jd(document_id: str, app_id: str) -> dict | None:
     """Retrieve a job description by its MongoDB ID."""
     if not ObjectId.is_valid(document_id):
         return None
 
-    return job_descriptions.find_one({"_id": ObjectId(document_id)})
+    return job_descriptions.find_one({"_id": ObjectId(document_id), "app_id": str(app_id)})
 
 
 @debug_trace
-def update_jd(document_id: str, fields: dict) -> bool:
+def update_jd(document_id: str, app_id: str, fields: dict) -> bool:
     """Update fields in a job description document."""
     if not ObjectId.is_valid(document_id):
         return False
@@ -35,7 +35,7 @@ def update_jd(document_id: str, fields: dict) -> bool:
     }
 
     result = job_descriptions.update_one(
-        {"_id": ObjectId(document_id)},
+        {"_id": ObjectId(document_id), "app_id": str(app_id)},
         {"$set": update_fields},
     )
 

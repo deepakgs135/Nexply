@@ -7,15 +7,15 @@ from nexus.core.resume_extractor import extract_resume_data
 
 
 @debug_trace
-def get_resume_details(document_id: str) -> dict | None:
+def get_resume_details(document_id: str, app_id: str) -> dict | None:
     """Retrieve a resume record by its MongoDB ID."""
-    return get_resume(document_id)
+    return get_resume(document_id, app_id)
 
 
 @debug_trace
-def parse_resume(document_id: str) -> dict:
+def parse_resume(document_id: str, app_id: str) -> dict:
     """Read the original resume, extract text, and save it."""
-    resume = get_resume(document_id)
+    resume = get_resume(document_id, app_id)
 
     if resume is None:
         raise LookupError("Resume not found.")
@@ -39,6 +39,7 @@ def parse_resume(document_id: str) -> dict:
         # Save parsed text in the same MongoDB document.
         updated = update_resume(
             document_id,
+            app_id,
             {
                 "parsed_text": parsed_text,
                 "parsing_status": "completed",
@@ -61,6 +62,7 @@ def parse_resume(document_id: str) -> dict:
     except Exception as exc:
         update_resume(
             document_id,
+            app_id,
             {
                 "parsing_status": "failed",
                 "parsing_error": str(exc),
@@ -70,9 +72,9 @@ def parse_resume(document_id: str) -> dict:
 
 
 @debug_trace
-def extract_resume(document_id: str) -> dict:
+def extract_resume(document_id: str, app_id: str) -> dict:
     """Extract structured resume data using Ollama and save it."""
-    resume = get_resume(document_id)
+    resume = get_resume(document_id, app_id)
 
     if resume is None:
         raise LookupError("Resume not found.")
@@ -87,6 +89,7 @@ def extract_resume(document_id: str) -> dict:
     # Mark extraction as in progress.
     update_resume(
         document_id,
+        app_id,
         {
             "llm_status": "processing",
             "llm_error": None,
@@ -100,6 +103,7 @@ def extract_resume(document_id: str) -> dict:
         # Save the validated JSON in the existing resume record.
         updated = update_resume(
             document_id,
+            app_id,
             {
                 "structured_result": structured_result,
                 "llm_status": "completed",
@@ -122,6 +126,7 @@ def extract_resume(document_id: str) -> dict:
         # Record failure so the client can inspect the current status.
         update_resume(
             document_id,
+            app_id,
             {
                 "llm_status": "failed",
                 "llm_error": str(exc),

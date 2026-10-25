@@ -3,10 +3,13 @@ from datetime import datetime, timezone
 
 from nexus.core.debug import debug_trace
 from bson import ObjectId
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from gridfs.errors import NoFile
 
 from nexus.storage.mongodb import resumes, file_bucket, save_original_file
+from nexus.api.auth import get_current_user
 from nexus.core.parser import extract_text
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
@@ -22,7 +25,10 @@ MAX_FILE_SIZE = 15 * 1024 * 1024
 
 @router.post("/upload", status_code=201)
 @debug_trace
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(
+    user: Annotated[dict, Depends(get_current_user)],
+    file: UploadFile = File(...),
+):
     filename = (file.filename or "").strip()
     extension = (
         "." + filename.rsplit(".", 1)[-1].lower()
@@ -55,6 +61,7 @@ async def upload_resume(file: UploadFile = File(...)):
             content=content,
             content_type=ALLOWED_TYPES[extension],
             collection=resumes,
+            app_id=user["app_id"],
         )
     except Exception:
         raise HTTPException(
@@ -74,12 +81,12 @@ async def upload_resume(file: UploadFile = File(...)):
 
 @router.post("/{document_id}/parse")
 @debug_trace
-def parse_resume(document_id: str):
+def parse_resume(document_id: str, user: Annotated[dict, Depends(get_current_user)]):
     if not ObjectId.is_valid(document_id):
         raise HTTPException(status_code=400, detail="Invalid document ID.")
 
     oid = ObjectId(document_id)
-    record = resumes.find_one({"_id": oid})
+    record = resumes.find_one({"_id": oid, "app_id": user["app_id"]})
 
     if not record:
         raise HTTPException(status_code=404, detail="Resume not found.")
@@ -96,7 +103,7 @@ def parse_resume(document_id: str):
         raise HTTPException(status_code=404, detail="Original file not found in GridFS.")
 
     resumes.update_one(
-        {"_id": oid},
+        {"_id": oid, "app_id": user["app_id"]},
         {"$set": {
             "parsing_status": "processing",
             "updated_at": datetime.now(timezone.utc),
@@ -107,7 +114,7 @@ def parse_resume(document_id: str):
         parsed_text = extract_text(original_filename, original_content)
 
         resumes.update_one(
-            {"_id": oid},
+            {"_id": oid, "app_id": user["app_id"]},
             {"$set": {
                 "parsed_text": parsed_text,
                 "parsed_text_characters": len(parsed_text),
@@ -118,7 +125,7 @@ def parse_resume(document_id: str):
         )
     except Exception as exc:
         resumes.update_one(
-            {"_id": oid},
+            {"_id": oid, "app_id": user["app_id"]},
             {"$set": {
                 "parsing_status": "failed",
                 "parsing_error": str(exc)[:500],

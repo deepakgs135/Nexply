@@ -7,6 +7,7 @@ from pathlib import Path
 from nexus.core.config import APP_NAME
 
 from nexus.api.routes.health import router as health_router
+from nexus.api.auth import router as auth_router
 from nexus.api.routes.resume.upload import router as resume_upload_router
 from nexus.api.routes.resume.parse import router as resume_parse_router
 from nexus.api.routes.resume.extract import router as resume_extract_router
@@ -24,6 +25,7 @@ if (FRONTEND_DIST / "assets").is_dir():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
 
 app.include_router(health_router)
+app.include_router(auth_router)
 
 app.include_router(resume_upload_router, prefix="/resumes")
 app.include_router(resume_parse_router, prefix="/resumes")

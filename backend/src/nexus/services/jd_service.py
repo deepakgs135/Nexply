@@ -4,19 +4,20 @@ from nexus.storage.jd_repository import get_jd, update_jd
 
 
 @debug_trace
-def get_jd_details(document_id: str) -> dict | None:
+def get_jd_details(document_id: str, app_id: str) -> dict | None:
     """Retrieve a job description record by its ID."""
-    return get_jd(document_id)
+    return get_jd(document_id, app_id)
 
 
 @debug_trace
-def save_parsed_jd(document_id: str, parsed_text: str) -> bool:
+def save_parsed_jd(document_id: str, app_id: str, parsed_text: str) -> bool:
     """Save extracted job description text and update parsing status."""
     if not parsed_text or not parsed_text.strip():
         raise ValueError("Parsed job description text cannot be empty.")
 
     return update_jd(
         document_id,
+        app_id,
         {
             "parsed_text": parsed_text,
             "parsing_status": "completed",

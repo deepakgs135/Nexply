@@ -36,6 +36,14 @@ MONGODB_SERVER_SELECTION_TIMEOUT_MS = int(
     os.getenv("MONGODB_SERVER_SELECTION_TIMEOUT_MS", "5000")
 )
 
+# PostgreSQL is authoritative for user identity. These remain optional at
+# import time so public health/docs endpoints still start before setup.
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
+JWT_ISSUER = os.getenv("JWT_ISSUER", "nexply-api")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "nexply-web")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
 MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "15"))
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")

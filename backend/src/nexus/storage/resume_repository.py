@@ -15,16 +15,16 @@ def create_resume(record: dict) -> str:
 
 
 @debug_trace
-def get_resume(document_id: str) -> dict | None:
+def get_resume(document_id: str, app_id: str) -> dict | None:
     """Find a resume by its MongoDB document ID."""
     if not ObjectId.is_valid(document_id):
         return None
 
-    return resumes.find_one({"_id": ObjectId(document_id)})
+    return resumes.find_one({"_id": ObjectId(document_id), "app_id": str(app_id)})
 
 
 @debug_trace
-def update_resume(document_id: str, fields: dict) -> bool:
+def update_resume(document_id: str, app_id: str, fields: dict) -> bool:
     """Update fields on an existing resume record."""
     if not ObjectId.is_valid(document_id):
         return False
@@ -32,7 +32,7 @@ def update_resume(document_id: str, fields: dict) -> bool:
     fields["updated_at"] = datetime.now(timezone.utc)
 
     result = resumes.update_one(
-        {"_id": ObjectId(document_id)},
+        {"_id": ObjectId(document_id), "app_id": str(app_id)},
         {"$set": fields},
     )
 

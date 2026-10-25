@@ -1,15 +1,18 @@
 
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from nexus.api.auth import get_current_user
 from nexus.services.resume_service import get_resume_details
 
 router = APIRouter(tags=["Resumes"])
 
 
 @router.get("/{document_id}")
-def get_resume_endpoint(document_id: str):
+def get_resume_endpoint(document_id: str, user: Annotated[dict, Depends(get_current_user)]):
     """Retrieve resume metadata and extraction results."""
-    resume = get_resume_details(document_id)
+    resume = get_resume_details(document_id, user["app_id"])
 
     if resume is None:
         raise HTTPException(

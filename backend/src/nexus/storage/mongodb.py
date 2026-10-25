@@ -40,6 +40,7 @@ def save_original_file(
     filename: str,
     content: bytes,
     content_type: str,
+    app_id: str,
     collection=None,
 ) -> str:
     """Save an original file in GridFS and create its metadata record."""
@@ -55,11 +56,13 @@ def save_original_file(
             "document_id": str(document_id),
             "stage": "original",
             "content_type": content_type,
+            "app_id": str(app_id),
         },
     )
 
     record = {
         "_id": document_id,
+        "app_id": str(app_id),
         "original_file_id": gridfs_file_id,
         "original_filename": filename,
         "original_content_type": content_type,

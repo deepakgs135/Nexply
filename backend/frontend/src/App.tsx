@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Auth from "./Auth";
 import {
   Activity, ArrowDownToLine, ArrowRight, ArrowUpFromLine, Award, BookOpen,
   Check, ChevronDown, CircleHelp, FileCheck2, FileText,
@@ -10,8 +11,11 @@ type Profile = Record<string, unknown>;
 type RecordItem = Record<string, unknown>;
 type ResumeRecord = { document_id?: string; original_filename?: string; structured_result?: Profile };
 type Phase = "idle" | "upload" | "parse" | "extract" | "done" | "error";
+type AuthUser = { app_id: string; full_name: string; email: string };
+type AuthResult = { access_token: string; user: AuthUser };
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
+let accessToken = sessionStorage.getItem("nexply_access_token") || "";
 const ACCEPTED = ["pdf", "docx", "txt"];
 const KNOWN = new Set([
   "full_name", "professional_title", "email", "phone", "location", "websites",
@@ -65,8 +69,15 @@ function allRows(profile: Profile) {
   return rows;
 }
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, init);
+  const headers = new Headers(init?.headers);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   const result = await response.json().catch(() => ({}));
+  if (response.status === 401 && accessToken && !path.startsWith("/auth/")) {
+    accessToken = "";
+    sessionStorage.removeItem("nexply_access_token");
+    window.dispatchEvent(new Event("nexply:auth-expired"));
+  }
   if (!response.ok) throw new Error(result.detail || `Request failed (${response.status})`);
   return result as T;
 }
@@ -111,12 +122,37 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [skillsExpanded, setSkillsExpanded] = useState(false);
   const [activeDetail, setActiveDetail] = useState("");
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     api<{ max_upload_size_mb: number }>("/api/config")
       .then((config) => { setMaxSizeMb(config.max_upload_size_mb); setApiOnline(true); })
       .catch(() => setApiOnline(false));
+    if (!accessToken) { setAuthChecked(true); return; }
+    api<AuthUser>("/auth/me")
+      .then(setUser)
+      .catch(() => { accessToken = ""; sessionStorage.removeItem("nexply_access_token"); })
+      .finally(() => setAuthChecked(true));
   }, []);
+  useEffect(() => {
+    const expireSession = () => signOut();
+    window.addEventListener("nexply:auth-expired", expireSession);
+    return () => window.removeEventListener("nexply:auth-expired", expireSession);
+  }, []);
+
+  function authenticated(result: AuthResult) {
+    accessToken = result.access_token;
+    sessionStorage.setItem("nexply_access_token", result.access_token);
+    setUser(result.user);
+  }
+  function signOut() {
+    accessToken = "";
+    sessionStorage.removeItem("nexply_access_token");
+    setUser(null);
+    setAuthChecked(true);
+    reset();
+  }
   useEffect(() => {
     if (!file) { setFileUrl(""); setTextPreview(""); return; }
     const extension = file.name.split(".").pop()?.toLowerCase();
@@ -209,6 +245,8 @@ export default function App() {
     { id: "extract", label: "Structure profile", done: phase === "done" },
   ];
 
+  if (!user) return <Auth onAuthenticated={authenticated} checking={!authChecked} />;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -220,11 +258,11 @@ export default function App() {
           <a className="nav-link muted" aria-disabled="true"><FileText size={17} /><span>Job descriptions</span><em>SOON</em></a>
           <a className="nav-link muted" aria-disabled="true"><Activity size={17} /><span>Activity</span><em>SOON</em></a>
         </nav>
-        <div className="side-bottom"><div className="privacy-card"><ShieldCheck size={17} /><strong>Designed for responsible review</strong><p>Structured candidate information stays clear and reviewable.</p></div><div className="member-card"><span className="member-avatar">D</span><span><strong>Talent team</strong><small>Workspace member</small></span><button aria-label="More account options">···</button></div></div>
+        <div className="side-bottom"><div className="privacy-card"><ShieldCheck size={17} /><strong>Designed for responsible review</strong><p>Structured candidate information stays clear and reviewable.</p></div><div className="member-card"><span className="member-avatar">{user.full_name.slice(0, 1).toUpperCase()}</span><span><strong>{user.full_name}</strong><small>{user.email}</small></span><button onClick={signOut} aria-label="Sign out" title="Sign out">↗</button></div></div>
       </aside>
 
       <main className="main-content" id="workspace">
-        <header className="topbar"><div className="breadcrumbs">Workspace <span>/</span> <strong>Candidate intelligence</strong></div><div className="topbar-actions"><span className="privacy-status"><LockKeyhole size={13} /> Private workspace</span><span className="user-dot">D</span></div></header>
+        <header className="topbar"><div className="breadcrumbs">Workspace <span>/</span> <strong>Candidate intelligence</strong></div><div className="topbar-actions"><span className="privacy-status"><LockKeyhole size={13} /> Private workspace</span><span className="user-dot">{user.full_name.slice(0, 1).toUpperCase()}</span><button className="signout-button" onClick={signOut}>Sign out</button></div></header>
         <div className="page-wrap">
           <section className="page-intro"><div><div className="eyebrow"><span /> CANDIDATE WORKSPACE</div><h1>Candidate intelligence</h1><p>Review a resume alongside every structured detail extracted from it.</p></div><a href="/docs" className="docs-button" target="_blank" rel="noreferrer"><CircleHelp size={15} /> API docs <ArrowRight size={13} /></a></section>
           <section className="process-rail" aria-label="Resume analysis workflow">{steps.map((step, index) => <div className={`process-step ${phase === step.id ? "active" : ""} ${step.done ? "done" : ""}`} key={step.id}><span className="step-index">{step.done ? <Check size={14} /> : `0${index + 1}`}</span><span className="step-copy"><strong>{step.label}</strong><small>{index === 0 ? "Keep original on file" : index === 1 ? "Text across every page" : "Complete structured output"}</small></span>{index < 2 && <span className="step-connector" />}</div>)}</section>

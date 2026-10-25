@@ -1,11 +1,14 @@
 from nexus.core.debug import debug_trace
 import logging
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from nexus.core.config import MAX_UPLOAD_SIZE_MB
 
 from nexus.storage.mongodb import resumes, save_original_file
+from nexus.api.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,10 @@ MAX_FILE_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 @router.post("/upload", status_code=201)
 @debug_trace
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(
+    user: Annotated[dict, Depends(get_current_user)],
+    file: UploadFile = File(...),
+):
     filename = (file.filename or "").strip()
 
     extension = (
@@ -73,13 +79,14 @@ async def upload_resume(file: UploadFile = File(...)):
             content=content,
             content_type=ALLOWED_TYPES[extension],
             collection=resumes,
+            app_id=user["app_id"],
         )
         logger.info("Resume upload saved successfully")
     except Exception as exc:
         logger.exception("Unable to store the uploaded resume")
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to store the uploaded resume: {type(exc).__name__}: {exc}",
+            detail="Unable to store the uploaded resume.",
         ) from exc
 
     return {

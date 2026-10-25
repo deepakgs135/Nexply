@@ -2,8 +2,9 @@ from nexus.core.debug import debug_trace
 import logging
 
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 
 from nexus.core.config import MAX_UPLOAD_SIZE_MB
 
@@ -27,6 +28,7 @@ MAX_FILE_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 @debug_trace
 async def upload_resume(
     user: Annotated[dict, Depends(get_current_user)],
+    upload_request_id: Annotated[UUID, Header(alias="Idempotency-Key")],
     file: UploadFile = File(...),
 ):
     filename = (file.filename or "").strip()
@@ -80,8 +82,14 @@ async def upload_resume(
             content_type=ALLOWED_TYPES[extension],
             collection=resumes,
             app_id=user["app_id"],
+            upload_request_id=str(upload_request_id),
         )
         logger.info("Resume upload saved successfully")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="This upload request key was already used for a different file.",
+        ) from exc
     except Exception as exc:
         logger.exception("Unable to store the uploaded resume")
         raise HTTPException(

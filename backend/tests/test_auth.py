@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 from uuid import UUID
 from unittest.mock import Mock
 
@@ -7,6 +8,7 @@ import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 from psycopg.errors import UniqueViolation
+from pymongo.errors import DuplicateKeyError
 
 from nexus.api import auth
 from nexus.api.main import app
@@ -194,6 +196,43 @@ def test_resume_and_jd_repositories_always_scope_reads_and_updates_to_app_id(mon
     assert jd_collection.update_one.call_args.args[0] == expected_filter
 
 
+@pytest.mark.parametrize("module,collection_name,create_function", [
+    (resume_repository, "resumes", "create_resume"),
+    (jd_repository, "job_descriptions", "create_jd"),
+])
+def test_new_resume_and_jd_documents_take_owner_from_authenticated_identity(
+    module, collection_name, create_function, monkeypatch
+):
+    collection = Mock()
+    collection.insert_one.return_value.inserted_id = "new-document-id"
+    monkeypatch.setattr(module, collection_name, collection)
+
+    created_id = getattr(module, create_function)(
+        {"title": "Example", "app_id": "attacker-controlled-value"},
+        TEST_APP_ID,
+    )
+
+    assert created_id == "new-document-id"
+    stored_record = collection.insert_one.call_args.args[0]
+    assert stored_record["app_id"] == TEST_APP_ID
+
+
+@pytest.mark.parametrize("module,update_function", [
+    (resume_repository, "update_resume"),
+    (jd_repository, "update_jd"),
+])
+@pytest.mark.parametrize("protected_field", ["app_id", "_id"])
+def test_resume_and_jd_owner_and_primary_key_cannot_be_changed(
+    module, update_function, protected_field
+):
+    with pytest.raises(ValueError, match="identity and ownership fields"):
+        getattr(module, update_function)(
+            "6add939dfffc8e3344105dd8",
+            TEST_APP_ID,
+            {protected_field: "another-owner"},
+        )
+
+
 def test_upload_storage_sets_same_app_id_on_resume_and_gridfs_metadata(monkeypatch):
     bucket = Mock()
     bucket.upload_from_stream.return_value = "gridfs-original-id"
@@ -212,3 +251,55 @@ def test_upload_storage_sets_same_app_id_on_resume_and_gridfs_metadata(monkeypat
     assert bucket.upload_from_stream.call_args.kwargs["metadata"]["app_id"] == TEST_APP_ID
     assert collection.insert_one.call_args.args[0]["original_file_id"] == "gridfs-original-id"
     assert collection.insert_one.call_args.args[0]["_id"] == mongodb.ObjectId(document_id)
+
+
+def test_retried_upload_with_same_key_reuses_existing_record_and_gridfs_file(monkeypatch):
+    bucket = Mock()
+    collection = Mock()
+    content = b"Same upload content"
+    request_id = "8f35ea21-47b0-4a91-a9a7-18ca5e6b76d9"
+    expected_id = mongodb.ObjectId(hashlib.sha256(f"{TEST_APP_ID}:{request_id}".encode()).digest()[:12])
+    collection.find_one.return_value = {"upload_sha256": hashlib.sha256(content).hexdigest()}
+    monkeypatch.setattr(mongodb, "file_bucket", bucket)
+
+    result = mongodb.save_original_file(
+        filename="resume.txt", content=content, content_type="text/plain",
+        app_id=TEST_APP_ID, collection=collection, upload_request_id=request_id,
+    )
+
+    assert result == str(expected_id)
+    bucket.upload_from_stream.assert_not_called()
+    collection.insert_one.assert_not_called()
+
+
+def test_upload_idempotency_key_cannot_be_reused_for_different_content(monkeypatch):
+    collection = Mock()
+    collection.find_one.return_value = {"upload_sha256": "different-file-hash"}
+
+    with pytest.raises(ValueError, match="different file"):
+        mongodb.save_original_file(
+            filename="resume.txt", content=b"new content", content_type="text/plain",
+            app_id=TEST_APP_ID, collection=collection,
+            upload_request_id="8f35ea21-47b0-4a91-a9a7-18ca5e6b76d9",
+        )
+
+
+def test_concurrent_upload_retry_cleans_duplicate_gridfs_file(monkeypatch):
+    bucket = Mock()
+    bucket.upload_from_stream.return_value = "duplicate-gridfs-file"
+    collection = Mock()
+    content = b"Same upload content"
+    collection.find_one.side_effect = [None, {"upload_sha256": hashlib.sha256(content).hexdigest()}]
+    collection.insert_one.side_effect = DuplicateKeyError("idempotent record already inserted")
+    monkeypatch.setattr(mongodb, "file_bucket", bucket)
+
+    result = mongodb.save_original_file(
+        filename="resume.txt", content=content, content_type="text/plain",
+        app_id=TEST_APP_ID, collection=collection,
+        upload_request_id="8f35ea21-47b0-4a91-a9a7-18ca5e6b76d9",
+    )
+
+    bucket.delete.assert_called_once_with("duplicate-gridfs-file")
+    assert result == str(mongodb.ObjectId(hashlib.sha256(
+        f"{TEST_APP_ID}:8f35ea21-47b0-4a91-a9a7-18ca5e6b76d9".encode()
+    ).digest()[:12]))

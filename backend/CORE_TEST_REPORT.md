@@ -4,7 +4,7 @@ Date: 2026-10-25
 
 ## Result
 
-- `python -m pytest -q`: **56 passed, 1 warning**.
+- `python -m pytest -q`: **66 passed, 1 warning**.
 - Live Swagger/OpenAPI and resume endpoint flow: **upload 201, parse 200, extract 200, get 200**.
 - Live model extraction returned `llm_status=completed` and matched the fictional fixture's name, email, Python, MongoDB, education, employer, and project.
 - Direct Ollama extraction of the fictional fixture now returns the canonical complete profile and preserves all fixture facts: name, email, phone, location, summary, 5 skills, education, job dates and both responsibility bullets, project, certification, and language.
@@ -22,7 +22,8 @@ Date: 2026-10-25
 - Resume schema: complete standard sections, custom section retention (including string/object detail normalization), nested detail aliases, literal contact recovery, and omitted experience date recovery.
 - PDF parser and resume extraction: embedded profile links are retained as clickable canonical website values; the Ollama prompt is loaded from `core/prompts/resume_extraction.py`.
 - End-to-end: actual upload, parse, Ollama extraction, retrieval, inline MongoDB fields, original GridFS storage, and omission of the GridFS id from the GET response.
-- Authentication: registration validation and Argon2id hashing, duplicate rejection, credential verification, inactive-user rejection, signed token signature/expiry checks, `/auth/me`, protected route enforcement, and MongoDB/GridFS owner scoping.
+- Authentication and ownership: registration validation and Argon2id hashing, duplicate rejection, credential verification, inactive-user rejection, signed token signature/expiry checks, `/auth/me`, protected route enforcement, MongoDB/GridFS owner assignment, owner-filtered reads/updates, and protection against changing `_id` or `app_id`.
+- Upload deduplication: synchronous UI lock, UUID idempotency key per selected file, same-key retry reuse, mismatched-file key rejection, and concurrent-request cleanup of the losing GridFS file.
 
 ## Issues found and fixed
 

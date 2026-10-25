@@ -108,7 +108,9 @@ function DetailLines({ item, exclude = [] }: { item: RecordItem; exclude?: strin
 
 export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const analyzingRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
+  const [uploadRequestId, setUploadRequestId] = useState("");
   const [fileUrl, setFileUrl] = useState("");
   const [textPreview, setTextPreview] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -189,17 +191,22 @@ export default function App() {
     if (!ACCEPTED.includes(extension)) { setError("Choose a PDF, DOCX, or TXT resume."); return; }
     if (next.size > maxSizeMb * 1048576) { setError(`This file exceeds the ${maxSizeMb} MB upload limit.`); return; }
     if (!next.size) { setError("This file is empty. Choose a resume with content."); return; }
-    setFile(next); setDocumentId(""); setProfile(null); setPhase("idle"); setPhaseLabel(""); setError(""); setQuery(""); setActiveDetail("");
+    setFile(next); setUploadRequestId(crypto.randomUUID()); setDocumentId(""); setProfile(null); setPhase("idle"); setPhaseLabel(""); setError(""); setQuery(""); setActiveDetail("");
   }
   async function analyze() {
-    if (busy || (!file && !documentId)) return;
+    if (analyzingRef.current || busy || (!file && !documentId)) return;
+    analyzingRef.current = true;
     setError("");
     try {
       let activeId = documentId;
       if (!activeId && file) {
         setPhase("upload"); setPhaseLabel("Saving original document");
         const body = new FormData(); body.append("file", file);
-        const uploaded = await api<{ document_id: string }>("/resumes/upload", { method: "POST", body });
+        const uploaded = await api<{ document_id: string }>("/resumes/upload", {
+          method: "POST",
+          body,
+          headers: { "Idempotency-Key": uploadRequestId },
+        });
         activeId = uploaded.document_id; setDocumentId(activeId);
       }
       if (!activeId) throw new Error("Select a resume before starting extraction.");
@@ -211,10 +218,12 @@ export default function App() {
       setProfile(record.structured_result || {}); setPhase("done"); setPhaseLabel("Profile ready for review");
     } catch (caught) {
       setPhase("error"); setError(caught instanceof Error ? caught.message : "Resume extraction failed.");
+    } finally {
+      analyzingRef.current = false;
     }
   }
   function reset() {
-    setFile(null); setDocumentId(""); setProfile(null); setPhase("idle"); setPhaseLabel(""); setError(""); setQuery(""); setActiveDetail("");
+    setFile(null); setUploadRequestId(""); setDocumentId(""); setProfile(null); setPhase("idle"); setPhaseLabel(""); setError(""); setQuery(""); setActiveDetail("");
     if (inputRef.current) inputRef.current.value = "";
   }
   function exportJson() {

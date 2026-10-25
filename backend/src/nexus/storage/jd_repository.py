@@ -8,9 +8,10 @@ from nexus.storage.mongodb import job_descriptions
 
 
 @debug_trace
-def create_jd(record: dict) -> str:
-    """Insert a job description document and return its ID."""
-    result = job_descriptions.insert_one(record)
+def create_jd(record: dict, app_id: str) -> str:
+    """Insert a job description owned by the authenticated PostgreSQL app_id."""
+    owned_record = {**record, "app_id": str(app_id)}
+    result = job_descriptions.insert_one(owned_record)
     return str(result.inserted_id)
 
 
@@ -28,6 +29,8 @@ def update_jd(document_id: str, app_id: str, fields: dict) -> bool:
     """Update fields in a job description document."""
     if not ObjectId.is_valid(document_id):
         return False
+    if "_id" in fields or "app_id" in fields:
+        raise ValueError("Job-description identity and ownership fields cannot be changed.")
 
     update_fields = {
         **fields,

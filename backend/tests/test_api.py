@@ -109,18 +109,30 @@ def test_upload_accepts_text_file_and_returns_id(client, monkeypatch):
     response = client.post(
         "/resumes/upload",
         files={"file": ("sample.txt", b"Sample resume text", "text/plain")},
+        headers={"Idempotency-Key": "64a195bb-e55c-4b4a-91e0-fcd7623fd010"},
     )
 
     assert response.status_code == 201
     assert response.json()["document_id"] == "resume-test-id"
     assert response.json()["parsing_status"] == "pending"
     assert save.call_args.kwargs["app_id"] == TEST_USER["app_id"]
+    assert save.call_args.kwargs["upload_request_id"] == "64a195bb-e55c-4b4a-91e0-fcd7623fd010"
+
+
+def test_upload_requires_idempotency_key(client):
+    response = client.post(
+        "/resumes/upload",
+        files={"file": ("sample.txt", b"Sample resume text", "text/plain")},
+    )
+
+    assert response.status_code == 422
 
 
 def test_upload_rejects_unsupported_file(client):
     response = client.post(
         "/resumes/upload",
         files={"file": ("sample.exe", b"not supported", "application/octet-stream")},
+        headers={"Idempotency-Key": "de7c49f0-a591-4dcf-8a4d-b4925bdbbf62"},
     )
 
     assert response.status_code == 415

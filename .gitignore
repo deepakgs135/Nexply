@@ -1,0 +1,13 @@
+# Python environments and generated files
+backend/.venv/
+**/__pycache__/
+*.py[cod]
+
+# Local/private or generated backend artifacts
+backend/resume_from_mongodb.pdf
+backend/src.zip
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example

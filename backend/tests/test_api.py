@@ -29,11 +29,50 @@ def test_openapi_documents_resume_endpoints(client):
     assert "/resumes/{document_id}" in paths
 
 
-def test_root_returns_running_status(client):
+def test_root_serves_resume_workspace(client):
+    from nexus.api.main import FRONTEND_DIST
+
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "running"
+    if (FRONTEND_DIST / "index.html").is_file():
+        assert 'id="root"' in response.text
+        assert "NEXPLY" in response.text
+    else:
+        assert response.json()["status"] == "running"
+
+
+def test_ui_config_exposes_upload_limits(client):
+    response = client.get("/api/config")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "max_upload_size_mb": 15,
+        "supported_formats": [".pdf", ".docx", ".txt"],
+    }
+
+
+def test_ui_build_assets_are_served(client):
+    from nexus.api.main import FRONTEND_DIST
+
+    assets = list((FRONTEND_DIST / "assets").glob("*.js"))
+    if not assets:
+        pytest.skip("React assets have not been built in this checkout.")
+    response = client.get(f"/assets/{assets[0].name}")
+
+    assert response.status_code == 200
+    assert "Candidate intelligence" in response.text or "resume" in response.text.lower()
+
+
+def test_ui_favicon_is_served(client):
+    from nexus.api.main import FRONTEND_DIST
+
+    if not (FRONTEND_DIST / "nexply.svg").is_file():
+        pytest.skip("React assets have not been built in this checkout.")
+    response = client.get("/nexply.svg")
+
+    assert response.status_code == 200
+    assert "<svg" in response.text
 
 
 def test_health_checks_mongodb(client, monkeypatch):

@@ -46,4 +46,4 @@ OLLAMA_THINK = os.getenv("OLLAMA_THINK", "false").strip().lower() in {
     "1", "true", "yes", "on"
 }
 OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0"))
-OLLAMA_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "2048"))
+OLLAMA_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "4096"))

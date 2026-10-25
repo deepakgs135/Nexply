@@ -1,5 +1,7 @@
 # Python environments and generated files
 backend/.venv/
+backend/frontend/node_modules/
+backend/frontend/dist/
 **/__pycache__/
 *.py[cod]
 

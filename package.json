@@ -1,0 +1,9 @@
+{
+  "name": "nexply",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend/frontend run dev",
+    "build": "npm --prefix backend/frontend run build",
+    "preview": "npm --prefix backend/frontend run preview"
+  }
+}

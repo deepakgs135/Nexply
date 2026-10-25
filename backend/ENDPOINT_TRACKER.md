@@ -6,7 +6,9 @@ Last reviewed: 2026-10-25
 
 | Endpoint | Implemented | Tested | Current result / next step |
 |---|---|---|---|
-| `GET /` | Yes | Yes | 200; app reports running. |
+| `GET /` | Yes | Yes | Serves the built React + TypeScript workspace from `frontend/dist`; in Vite development mode use port 5173. |
+| `GET /api/config` | Yes | Yes | Returns configured upload size and supported formats for UI validation. |
+| `GET /assets/*` | Yes | Yes | Serves Vite-built React bundles and styles. |
 | `GET /health` | Yes | Yes | 200; local MongoDB ping succeeds and reports `nexply`. |
 | `POST /resumes/upload` | Yes | Yes | Automated validation tests plus live upload of the fictional TXT fixture to an isolated database returned 201. |
 | `GET /resumes/{document_id}` | Yes | Yes | 200 for existing resume `6adda9b650f84544a4aabea5`; parsed text is returned with 5,215 characters. Also verified the end-to-end test record and inline parsed/structured fields. |

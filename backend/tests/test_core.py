@@ -85,11 +85,77 @@ def test_resume_schema_applies_empty_defaults():
     assert result.education == []
     assert result.experience == []
     assert result.projects == []
+    assert result.additional_sections == []
 
 
 def test_resume_schema_requires_project_name():
     with pytest.raises(ValidationError):
         ResumeData.model_validate({"projects": [{}]})
+
+
+def test_resume_schema_retains_custom_details_and_nested_fields():
+    payload = resume_extractor.normalize_resume_payload({
+        "experience": [{
+            "company": "Sample Labs",
+            "achievements": ["Improved throughput by 20%"],
+            "team_size": "6 engineers",
+        }],
+        "additional_sections": [{"title": "Community", "details": ["Mentor"]}],
+        "patents": ["US-123"],
+    })
+    result = ResumeData.model_validate(payload).model_dump()
+
+    assert result["experience"][0]["achievements"] == ["Improved throughput by 20%"]
+    assert result["experience"][0]["team_size"] == "6 engineers"
+    assert result["additional_sections"][0]["details"] == ["Mentor"]
+    assert result["additional_sections"][1]["title"] == "Patents"
+    assert result["additional_sections"][1]["details"] == ["US-123"]
+
+
+def test_resume_extractor_normalizes_common_alternate_llm_keys():
+    payload = resume_extractor.normalize_resume_payload({
+        "name": {"first_name": "Jordan", "last_name": "Avery"},
+        "contact_info": {"email": "jordan@example.com"},
+        "skills_list": ["Python", "FastAPI"],
+        "experience_list": [{
+            "title": "Developer", "company": "Sample Labs",
+            "responsibilities": ["Built APIs"],
+            "start_date_string": "June 2024",
+            "responsibilities_and_results": ["Built APIs", "Reduced latency"],
+        }],
+    })
+    result = ResumeData.model_validate(payload)
+
+    assert result.full_name == "Jordan Avery"
+    assert result.email == "jordan@example.com"
+    assert result.skills == ["Python", "FastAPI"]
+    assert result.experience[0].job_title == "Developer"
+    assert result.experience[0].start_date == "June 2024"
+    assert result.experience[0].responsibilities == ["Built APIs", "Reduced latency"]
+
+
+def test_resume_extractor_fills_missing_literal_contact_values_from_text():
+    result = resume_extractor.fill_contact_from_source(
+        {"full_name": None, "email": None, "phone": None, "location": None},
+        "Jordan Avery\nEmail: jordan.avery@example.com\nPhone: 555-010-2048\nLocation: Portland, Oregon",
+    )
+
+    assert result["full_name"] == "Jordan Avery"
+    assert result["email"] == "jordan.avery@example.com"
+    assert result["phone"] == "555-010-2048"
+    assert result["location"] == "Portland, Oregon"
+
+
+def test_resume_extractor_fills_missing_experience_end_date_from_source():
+    result = resume_extractor.fill_experience_dates_from_source(
+        {"experience": [{
+            "job_title": "Junior Developer", "company": "Sample Labs",
+            "start_date": "June 2024", "end_date": None,
+        }]},
+        "Junior Developer, Sample Labs, June 2024 - Present",
+    )
+
+    assert result["experience"][0]["end_date"] == "Present"
 
 
 def test_legacy_resume_route_module_imports():

@@ -321,6 +321,39 @@ def test_rex_rewrites_only_requested_field_from_owner_profile(client, monkeypatc
     rewrite.assert_called_once_with(source["structured_result"], ["professional_summary"], None, "brief")
 
 
+def test_rex_manual_profile_interview_returns_dynamic_profile(client, monkeypatch):
+    profile = {"full_name": "Deepak Kumar", "experience": [], "education": [], "skills": []}
+    interview = Mock(return_value={
+        "model": "llama3.1:8b", "assistant_message": "What is your current designation at Tata Technologies?",
+        "ready_to_save": True, "structured_result": profile,
+    })
+    monkeypatch.setattr(ai_resume_route, "interview_resume_profile", interview)
+
+    response = client.post("/resumes/manual-profile/interview", json={
+        "messages": [{"role": "user", "content": "I am Deepak Kumar and work at Tata Technologies."}],
+    })
+
+    assert response.status_code == 200
+    assert "current designation" in response.json()["assistant_message"]
+    interview.assert_called_once()
+
+
+def test_rex_manual_profile_saves_owner_scoped_history_record(client, monkeypatch):
+    profile = {"full_name": "Deepak Kumar", "professional_title": "Senior Engineer"}
+    create = Mock(return_value="6add939dfffc8e3344105dd8")
+    monkeypatch.setattr(ai_resume_route, "create_resume", create)
+
+    response = client.post("/resumes/manual-profile", json={"structured_result": profile})
+
+    assert response.status_code == 200
+    assert response.json()["document_id"] == "6add939dfffc8e3344105dd8"
+    saved_record, owner_id = create.call_args.args
+    assert saved_record["source"] == "rex_manual_profile"
+    assert saved_record["original_file_id"] is None
+    assert saved_record["structured_result"]["full_name"] == "Deepak Kumar"
+    assert owner_id == TEST_USER["app_id"]
+
+
 def test_ai_resume_export_returns_docx_for_owned_resume(client, monkeypatch):
     monkeypatch.setattr(ai_resume_route, "get_resume_details", Mock(return_value={"structured_result": {"full_name": "Sample Candidate"}}))
     response = client.post("/resumes/6add939dfffc8e3344105dd8/ai-resume/export", json={"structured_result": {"full_name": "Sample Candidate", "skills": ["Python"]}})

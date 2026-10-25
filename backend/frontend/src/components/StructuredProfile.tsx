@@ -4,7 +4,7 @@ import { ArrowDownToLine, Award, BookOpen, GraduationCap, Pencil, Save, Search, 
 import { api, downloadBlob } from "../shared/api";
 import ResumeEditor, { ResumePreview } from "./ResumeEditor";
 import {
-  allRows, DetailLines, isMissingValue, ItemMeta, label, objectList, safeUrl, SectionHeading,
+  allRows, DetailLines, isMissingFieldName, isMissingValue, ItemMeta, label, objectList, removeMalformedFields, safeUrl, SectionHeading,
   stringList, valueText, type Profile,
 } from "../shared/resumeFormat";
 
@@ -46,7 +46,7 @@ export default function StructuredProfile({
   const [aiExporting, setAiExporting] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiResult, setAiResult] = useState<{ model: string; structured_result: Profile } | null>(null);
-  useEffect(() => { setDraft(profile ? structuredClone(profile) : {}); }, [profile]);
+  useEffect(() => { setDraft(profile ? removeMalformedFields(structuredClone(profile)) as Profile : {}); }, [profile]);
   useEffect(() => {
     if (!aiOpen || aiModels.length) return;
     setAiModelsLoading(true);
@@ -137,13 +137,13 @@ export default function StructuredProfile({
   const volunteer = objectList(visible.volunteer_experience);
   const customSections = objectList(visible.additional_sections);
   const otherSections = Object.entries(visible).filter(([key, value]) =>
-    !STANDARD_FIELDS.has(key) && !isMissingValue(value) && !/(?:^|[_\s-])(null|none|undefined|n\/a|na)$/i.test(key.trim()),
+    !STANDARD_FIELDS.has(key) && !isMissingValue(value) && !isMissingFieldName(key),
   );
   const candidateName = valueText(profile?.full_name) || "Candidate details";
 
   function exportJson() {
     if (!profile) return;
-    const blob = new Blob([JSON.stringify(profile, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(removeMalformedFields(profile), null, 2)], { type: "application/json" });
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = objectUrl;

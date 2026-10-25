@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 from typing import Annotated, Any, Literal
 
 import requests
@@ -10,8 +11,9 @@ from nexus.api.auth import get_current_user
 from nexus.core.config import OLLAMA_RESUME_WRITER_MODEL
 from nexus.core.schemas.resume import ResumeData
 from nexus.services.resume_export import build_resume_docx
-from nexus.services.resume_writer import available_resume_models, rewrite_resume_text, write_resume
+from nexus.services.resume_writer import available_resume_models, interview_resume_profile, rewrite_resume_text, write_resume
 from nexus.services.resume_service import get_resume_details
+from nexus.storage.resume_repository import create_resume
 
 
 router = APIRouter(tags=["AI Resume"])
@@ -29,7 +31,71 @@ class ResumeExportRequest(BaseModel):
 class REXRewriteRequest(BaseModel):
     field_path: list[str | int]
     model: str | None = None
-    style: Literal["concise", "brief", "elaborate"] = "brief"
+    style: Literal["concise", "brief", "detail", "elaborate"] = "brief"
+
+
+class REXInterviewMessage(BaseModel):
+    role: Literal["assistant", "user"]
+    content: str = Field(min_length=1, max_length=5000)
+
+
+class REXInterviewRequest(BaseModel):
+    messages: list[REXInterviewMessage] = Field(min_length=1, max_length=40)
+    current_profile: dict[str, Any] | None = None
+    model: str | None = None
+
+
+class ManualProfileSaveRequest(BaseModel):
+    structured_result: dict[str, Any]
+
+
+@router.post("/manual-profile/interview")
+def rex_manual_profile_interview(
+    payload: REXInterviewRequest,
+    user: Annotated[dict, Depends(get_current_user)],
+):
+    """Extract profile facts from a REX interview and ask the next follow-up question."""
+    del user  # Auth is required; the transient interview itself is held by the authenticated client.
+    try:
+        return interview_resume_profile(
+            [message.model_dump() for message in payload.messages],
+            payload.current_profile,
+            payload.model,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503, detail="Ollama is unavailable. Start Ollama and try again.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/manual-profile")
+def save_rex_manual_profile(
+    payload: ManualProfileSaveRequest,
+    user: Annotated[dict, Depends(get_current_user)],
+):
+    """Create a user-owned, editable resume history record from a REX interview."""
+    try:
+        profile = ResumeData.model_validate(payload.structured_result).model_dump(mode="json")
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
+    if not any((profile.get("full_name"), profile.get("professional_summary"), profile.get("experience"), profile.get("education"), profile.get("skills"))):
+        raise HTTPException(status_code=422, detail="Add at least one candidate detail before saving the profile.")
+    now = datetime.now(timezone.utc)
+    document_id = create_resume({
+        "source": "rex_manual_profile",
+        "original_filename": "Manually created profile · REX",
+        "original_size_bytes": 0,
+        "original_file_id": None,
+        "parsed_text": None,
+        "structured_result": profile,
+        "parsing_status": "not_applicable",
+        "llm_status": "completed",
+        "parsing_error": None,
+        "llm_error": None,
+        "created_at": now,
+        "updated_at": now,
+    }, user["app_id"])
+    return {"document_id": document_id, "structured_result": profile}
 
 
 @router.get("/ai/models")

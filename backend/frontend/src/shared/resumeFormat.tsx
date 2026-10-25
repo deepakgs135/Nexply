@@ -15,7 +15,17 @@ export function isMissingValue(value: unknown): boolean {
 }
 
 export function isMissingFieldName(key: string) {
-  return /(?:^|[_\s-])(null|none|undefined|n\/a|na)$/i.test(key.trim());
+  return /\b(null|none|undefined|n\/a|not available|not provided)\b/i.test(key.trim());
+}
+
+export function removeMalformedFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(removeMalformedFields);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as RecordItem)
+      .filter(([key]) => !isMissingFieldName(key))
+      .map(([key, child]) => [key, removeMalformedFields(child)]));
+  }
+  return value;
 }
 
 export function label(value: string) {
@@ -31,7 +41,11 @@ export function label(value: string) {
 }
 export function valueText(value: unknown): string {
   if (isMissingValue(value)) return "";
-  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (typeof value === "string") {
+    const text = value.replace(/<br\s*\/?\s*>/gi, "\n").replace(/<\/(?:p|div|li)>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
+    return text.trim();
+  }
+  if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (Array.isArray(value)) return value.map(valueText).filter(Boolean).join(" · ");
   if (typeof value === "object") return Object.entries(value as RecordItem)

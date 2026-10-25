@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpFromLine, Check, CircleHelp, FileCheck2, FileText, LoaderCircle, ShieldCheck, Upload, X } from "lucide-react";
+import { ArrowRight, ArrowUpFromLine, Check, CircleHelp, FileCheck2, FileText, LoaderCircle, ShieldCheck, Sparkles, Upload, X } from "lucide-react";
 import { api } from "../shared/api";
 import StructuredProfile from "../components/StructuredProfile";
+import RexManualProfile from "../components/RexManualProfile";
+import ResumeEditor from "../components/ResumeEditor";
 import { formatSize, type Profile } from "../shared/resumeFormat";
 type ResumeRecord = { document_id?: string; original_filename?: string; structured_result?: Profile };
 type Phase = "idle" | "upload" | "parse" | "extract" | "done" | "error";
@@ -24,6 +26,11 @@ export default function CandidateIntelligencePage() {
   const [dragging, setDragging] = useState(false);
   const [maxSizeMb, setMaxSizeMb] = useState(15);
   const [apiOnline, setApiOnline] = useState(false);
+  const [manualProfileOpen, setManualProfileOpen] = useState(false);
+  const [manualBuilderOpen, setManualBuilderOpen] = useState(false);
+  const [manualDraft, setManualDraft] = useState<Profile>({});
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualSaveError, setManualSaveError] = useState("");
 
   useEffect(() => {
     api<{ max_upload_size_mb: number }>("/api/config")
@@ -86,6 +93,28 @@ export default function CandidateIntelligencePage() {
     setFile(null); setUploadRequestId(""); setDocumentId(""); setProfile(null); setPhase("idle"); setPhaseLabel(""); setError("");
     if (inputRef.current) inputRef.current.value = "";
   }
+  function updateManualDraft(path: (string | number)[], value: unknown) {
+    setManualDraft((current) => {
+      const copy = structuredClone(current) as Record<string, unknown>;
+      let parent: any = copy;
+      for (const part of path.slice(0, -1)) parent = parent[part];
+      parent[path[path.length - 1]] = value;
+      return copy;
+    });
+  }
+  async function saveManualDraft() {
+    if (manualSaving) return;
+    setManualSaving(true); setManualSaveError("");
+    try {
+      const result = await api<{ document_id: string; structured_result: Profile }>("/resumes/manual-profile", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structured_result: manualDraft }),
+      });
+      setDocumentId(result.document_id); setProfile(result.structured_result); setPhase("done"); setPhaseLabel("Manual resume saved");
+      setManualBuilderOpen(false); setManualDraft({});
+    } catch (caught) { setManualSaveError(caught instanceof Error ? caught.message : "Could not save this resume."); }
+    finally { setManualSaving(false); }
+  }
   const steps = [
     { id: "upload", label: "Upload", done: ["parse", "extract", "done"].includes(phase) },
     { id: "parse", label: "Read document", done: ["extract", "done"].includes(phase) },
@@ -94,7 +123,7 @@ export default function CandidateIntelligencePage() {
 
   return (
     <div className="page-wrap">
-          <section className="page-intro"><div><div className="eyebrow"><span /> CANDIDATE WORKSPACE</div><h1>Candidate intelligence</h1><p>Review a resume alongside every structured detail extracted from it.</p></div><a href="/docs" className="docs-button" target="_blank" rel="noreferrer"><CircleHelp size={15} /> API docs <ArrowRight size={13} /></a></section>
+          <section className="page-intro"><div><div className="eyebrow"><span /> CANDIDATE WORKSPACE</div><h1>Candidate intelligence</h1><p>Review a resume alongside every structured detail extracted from it.</p></div><div className="candidate-intro-actions"><button className="rex-manual-start" type="button" onClick={() => { setManualDraft({}); setManualSaveError(""); setManualBuilderOpen(true); }} disabled={!apiOnline}><FileText size={15} /> Build manually</button><button className="candidate-rex-start" type="button" onClick={() => setManualProfileOpen(true)} disabled={!apiOnline}><Sparkles size={15} /> Create with REX</button><a href="/docs" className="docs-button" target="_blank" rel="noreferrer"><CircleHelp size={15} /> API docs <ArrowRight size={13} /></a></div></section>
           <section className="process-rail" aria-label="Resume analysis workflow">{steps.map((step, index) => <div className={`process-step ${phase === step.id ? "active" : ""} ${step.done ? "done" : ""}`} key={step.id}><span className="step-index">{step.done ? <Check size={14} /> : `0${index + 1}`}</span><span className="step-copy"><strong>{step.label}</strong><small>{index === 0 ? "Keep original on file" : index === 1 ? "Text across every page" : "Complete structured output"}</small></span>{index < 2 && <span className="step-connector" />}</div>)}</section>
 
           <section className="review-layout">
@@ -118,8 +147,10 @@ export default function CandidateIntelligencePage() {
               {(busy || phase === "error") && <div className="progress-panel" aria-live="polite"><strong>{phaseLabel}</strong><div className="progress-steps">{steps.map((step) => <span className={step.done ? "finished" : phase === step.id ? "working" : ""} key={step.id}>{step.done ? <Check size={12} /> : phase === step.id ? <LoaderCircle size={12} className="spin" /> : <i />}{step.label}</span>)}</div>{error && <div className="error-message" role="alert">{error}{documentId && " Your upload is saved; retry to continue."}</div>}</div>}
             </article>
 
-            <StructuredProfile profile={profile} filename={file?.name} documentId={documentId || undefined} onProfileSaved={setProfile} />
+          <StructuredProfile profile={profile} filename={file?.name || (documentId ? "Manually created profile · REX" : undefined)} documentId={documentId || undefined} onProfileSaved={setProfile} />
           </section>
+          {manualProfileOpen && <RexManualProfile onClose={() => setManualProfileOpen(false)} onSaved={(id, savedProfile) => { setDocumentId(id); setProfile(savedProfile); setPhase("done"); setPhaseLabel("Manual profile saved"); setManualProfileOpen(false); }} />}
+          {manualBuilderOpen && <ResumeEditor mode="create" profile={manualDraft} documentId="" saving={manualSaving} error={manualSaveError} onChange={updateManualDraft} onSave={() => void saveManualDraft()} onCancel={() => { if (!manualSaving) setManualBuilderOpen(false); }} />}
           <footer className="app-footer"><span>© 2026 NEXPLY AI</span><span>Structured candidate information for thoughtful review.</span><span className={apiOnline ? "footer-online" : "footer-offline"}><i />{apiOnline ? "All systems operational" : "API unavailable"}</span></footer>
     </div>
   );

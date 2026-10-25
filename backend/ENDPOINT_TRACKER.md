@@ -21,7 +21,9 @@ Last reviewed: 2026-10-25
 | `DELETE /resumes/{document_id}` | Yes | Yes | Owner-scoped hard delete removes the resume record plus its original GridFS file and other GridFS originals associated with the resume. |
 | `GET /resumes/ai/models` | Yes | Yes | Lists locally installed Ollama text-generation models for the optional AI Smart resume writer. |
 | `POST /resumes/{document_id}/ai-resume` | Yes | Yes | Generates a non-persisted profile draft from the owner's saved structured profile, with an optional target job description. |
-| `POST /resumes/{document_id}/rex/rewrite` | Yes | Yes | Rewrites or drafts the requested summary/description from owner-scoped profile facts with concise, brief, or elaborate style; applies to the unsaved editor draft and persists only after user Save. |
+| `POST /resumes/{document_id}/rex/rewrite` | Yes | Yes | Rewrites or drafts the requested summary/description from owner-scoped profile facts in 2, 5, or 8 lines (concise, brief, or detail); applies to the unsaved editor draft and persists only after user Save. |
+| `POST /resumes/manual-profile/interview` | Yes | Yes | Authenticated REX interview extracts only user-provided facts and asks one dynamic follow-up; route behavior is mocked in tests, live Ollama interview not yet tested. |
+| `POST /resumes/manual-profile` | Yes | Yes | Validates and saves a manual REX profile as a new authenticated resume-history record with no source file/GridFS object; owner app_id is verified in a mocked route test. |
 | `POST /resumes/{document_id}/ai-resume/export` | Yes | Yes | Owner-checked DOCX download generated in memory; does not create a resume or GridFS record. |
 | `POST /resumes/{document_id}/parse` | Yes | Yes | Requires bearer authentication; document reads and parsed-text/status updates are owner-filtered. |
 | `POST /resumes/{document_id}/extract` | Yes | Yes | Requires bearer authentication; document reads and structured-result/status updates are owner-filtered. |

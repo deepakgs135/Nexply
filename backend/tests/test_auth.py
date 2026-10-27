@@ -45,6 +45,24 @@ def database_user(password_hash: str | None = None, *, active: bool = True):
     }
 
 
+def test_job_preferences_upsert_updates_by_app_id(monkeypatch):
+    connection = Mock()
+    connection.__enter__ = Mock(return_value=connection)
+    connection.__exit__ = Mock(return_value=False)
+    connection.execute.return_value.fetchone.return_value = {"app_id": UUID(TEST_APP_ID)}
+    monkeypatch.setattr(postgres, "_connect", lambda: connection)
+
+    result = postgres.upsert_job_preferences(TEST_APP_ID, {
+        "current_ctc": "8 LPA", "preferred_locations": ["Pune"],
+    })
+
+    query, values = connection.execute.call_args.args
+    assert "ON CONFLICT (app_id) DO UPDATE SET" in query
+    assert "updated_at = NOW()" in query
+    assert values[-1] == TEST_APP_ID
+    assert result == {"app_id": TEST_APP_ID}
+
+
 def test_registration_normalizes_email_hashes_password_and_returns_generated_app_id(client, monkeypatch):
     monkeypatch.setattr(auth, "JWT_SECRET_KEY", TEST_SECRET)
     created = {}
@@ -58,6 +76,7 @@ def test_registration_normalizes_email_hashes_password_and_returns_generated_app
         "full_name": " Casey   Rivera ",
         "email": "CASEY@Example.com",
         "password": TEST_PASSWORD,
+        "confirm_password": TEST_PASSWORD,
         "app_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     })
 
@@ -78,6 +97,7 @@ def test_registration_rejects_duplicate_email(client, monkeypatch):
 
     response = client.post("/auth/register", json={
         "full_name": "Casey Rivera", "email": TEST_EMAIL, "password": TEST_PASSWORD,
+        "confirm_password": TEST_PASSWORD,
     })
 
     assert response.status_code == 409
@@ -90,6 +110,7 @@ def test_registration_rejects_short_password(client, monkeypatch):
 
     response = client.post("/auth/register", json={
         "full_name": "Casey Rivera", "email": TEST_EMAIL, "password": "short",
+        "confirm_password": "short",
     })
 
     assert response.status_code == 422
@@ -103,6 +124,7 @@ def test_registration_fails_closed_without_a_strong_signing_secret(client, monke
 
     response = client.post("/auth/register", json={
         "full_name": "Casey Rivera", "email": TEST_EMAIL, "password": TEST_PASSWORD,
+        "confirm_password": TEST_PASSWORD,
     })
 
     assert response.status_code == 503

@@ -47,6 +47,27 @@ def list_resumes(app_id: str, skip: int = 0, limit: int = 50) -> list[dict]:
 
 
 @debug_trace
+def get_latest_resume(app_id: str) -> dict | None:
+    """Return the newest resume record for an owner."""
+    return resumes.find_one(
+        {"app_id": str(app_id)},
+        sort=[("created_at", -1), ("_id", -1)],
+    )
+
+
+@debug_trace
+def list_other_resume_ids(app_id: str, keep_document_id: str) -> list[str]:
+    """List the owner's resume ids except the selected latest record."""
+    if not ObjectId.is_valid(keep_document_id):
+        return []
+    records = resumes.find(
+        {"app_id": str(app_id), "_id": {"$ne": ObjectId(keep_document_id)}},
+        {"_id": 1},
+    )
+    return [str(record["_id"]) for record in records]
+
+
+@debug_trace
 def count_resumes(app_id: str) -> int:
     """Count only resumes owned by the authenticated user."""
     return resumes.count_documents({"app_id": str(app_id)})

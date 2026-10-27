@@ -14,6 +14,15 @@ volunteer work, interests, and other named resume sections. Keep separate items
 separate. Do not collapse a detailed list into a vague summary. Keep meaningful
 phrasing and numbers intact. Dates should remain strings in their original form.
 
+For each experience entry, put its overview and complete source bullet list in
+description. Represent bullets as a valid HTML unordered list using only <ul>
+and <li> tags. Do not repeat those bullets in responsibilities or achievements.
+Never create field names from missing values or labels (for example, do not emit
+"location null, description" or "description null, description"). Use only the
+property names in the supplied schema. Do not put a JSON list into description.
+Preserve locations and dates even when they appear on a line
+separate from the role heading.
+
 Never infer or invent a value. Use null for an unavailable scalar and [] for an
 unavailable list. Put factual sections that do not fit standard fields into
 additional_sections with their original title and all details. Retain exact URLs

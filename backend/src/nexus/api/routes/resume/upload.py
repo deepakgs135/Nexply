@@ -10,6 +10,7 @@ from nexus.core.config import MAX_UPLOAD_SIZE_MB
 
 from nexus.storage.mongodb import resumes, save_original_file
 from nexus.api.auth import get_current_user
+from nexus.services.resume_service import retain_latest_resume
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,10 @@ async def upload_resume(
             app_id=user["app_id"],
             upload_request_id=str(upload_request_id),
         )
+        try:
+            retain_latest_resume(str(user["app_id"]), document_id)
+        except Exception:
+            logger.exception("Could not remove an older resume after latest upload")
         logger.info("Resume upload saved successfully")
     except ValueError as exc:
         raise HTTPException(

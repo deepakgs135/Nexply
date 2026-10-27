@@ -2,6 +2,7 @@
 from nexus.core.debug import debug_trace
 import json
 import re
+from html import escape
 from collections.abc import Mapping
 from urllib.parse import urlparse
 
@@ -59,6 +60,28 @@ def _normalize_items(items, aliases: dict[str, tuple[str, ...]]):
                 entry[target] = value
             for alias in keys:
                 entry.pop(alias, None)
+        # Some local models have emitted malformed keys such as
+        # "description null, description" and placed the complete bullet list
+        # under that key. Recover those source details into the canonical list.
+        malformed_bullets = []
+        for key in list(entry):
+            if key in aliases or key in {target for target in aliases}:
+                continue
+            normalized_key = re.sub(r"[^a-z]+", " ", str(key).casefold()).strip()
+            if "description" in normalized_key and ("null" in normalized_key or normalized_key != "description"):
+                value = entry.pop(key)
+                malformed_bullets.extend(_detail_strings(value))
+        if malformed_bullets:
+            entry["responsibilities"] = list(dict.fromkeys([
+                *_detail_strings(entry.get("responsibilities")), *malformed_bullets,
+            ]))
+        # A list under description is a list of work bullets, not prose.
+        if isinstance(entry.get("description"), list):
+            entry["responsibilities"] = list(dict.fromkeys([
+                *_detail_strings(entry.get("responsibilities")),
+                *_detail_strings(entry.pop("description")),
+            ]))
+            entry["description"] = None
         normalized.append(entry)
     return normalized
 
@@ -147,10 +170,27 @@ def normalize_resume_payload(data: dict) -> dict:
         "job_title": ("title", "position", "role", "position_title"),
         "start_date": ("from", "start", "startDate", "start_date_string"),
         "end_date": ("to", "end", "endDate", "end_date_string"),
-        "responsibilities": ("duties", "key_responsibilities", "job_description", "responsibilities_and_results"),
+        "responsibilities": ("duties", "key_responsibilities", "job_description", "responsibilities_and_results", "responsibilities_and_achievements"),
+        "location": ("location_string", "location_text", "work_location"),
         "achievements": ("key_achievements", "results", "accomplishments"),
         "technologies": ("tools", "tech_stack"),
     })
+    # The profile editor's Description field is a rich-text block. Keep the
+    # source's role bullets there as a real unordered list instead of exposing
+    # model-generated alias keys as stray editable fields.
+    for item in normalized["experience"]:
+        if not isinstance(item, dict):
+            continue
+        bullets = list(dict.fromkeys([
+            *_detail_strings(item.get("responsibilities")),
+            *_detail_strings(item.get("achievements")),
+        ]))
+        if bullets:
+            bullet_html = "<ul>" + "".join(f"<li>{escape(bullet)}</li>" for bullet in bullets) + "</ul>"
+            current_description = item.get("description")
+            item["description"] = f"{current_description}<p></p>{bullet_html}" if current_description else bullet_html
+            item["responsibilities"] = []
+            item["achievements"] = []
     normalized["projects"] = _normalize_items(normalized.get("projects"), {
         "name": ("project_name", "title"),
         "description": ("overview", "summary"),
@@ -356,6 +396,35 @@ def fill_experience_dates_from_source(data: dict, parsed_text: str) -> dict:
 
 
 @debug_trace
+def fill_experience_locations_from_source(data: dict, parsed_text: str) -> dict:
+    """Recover short location lines adjacent to each role's printed date range."""
+    lines = [line.strip() for line in parsed_text.splitlines()]
+    for role in data.get("experience", []):
+        if not isinstance(role, dict) or role.get("location"):
+            continue
+        start, end = role.get("start_date"), role.get("end_date")
+        if not start or not end:
+            continue
+        for index, line in enumerate(lines):
+            folded = line.casefold()
+            if str(start).casefold() not in folded or str(end).casefold() not in folded:
+                continue
+            for candidate in lines[index + 1:index + 4]:
+                candidate = candidate.strip(" •\t")
+                if not candidate or re.match(r"^---\s*Page\s+\d+\s*---$", candidate, re.I):
+                    continue
+                if candidate.startswith(("•", "-", "▪")) or len(candidate) > 100:
+                    break
+                if re.search(r"@|https?://|\b(experience|education|skills|projects)\b", candidate, re.I):
+                    break
+                role["location"] = candidate
+                break
+            if role.get("location"):
+                break
+    return data
+
+
+@debug_trace
 def extract_resume_data(parsed_text: str) -> dict:
     """Extract structured resume data using local Ollama."""
     if not parsed_text or not parsed_text.strip():
@@ -422,6 +491,7 @@ def extract_resume_data(parsed_text: str) -> dict:
     data = fill_contact_from_source(data, parsed_text)
     data = fill_profile_links_from_source(data, parsed_text)
     data = fill_experience_dates_from_source(data, parsed_text)
+    data = fill_experience_locations_from_source(data, parsed_text)
 
     try:
         validated = ResumeData.model_validate(data)

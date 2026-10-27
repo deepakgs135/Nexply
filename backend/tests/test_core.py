@@ -154,7 +154,8 @@ def test_resume_schema_retains_custom_details_and_nested_fields():
     })
     result = ResumeData.model_validate(payload).model_dump()
 
-    assert result["experience"][0]["achievements"] == ["Improved throughput by 20%"]
+    assert result["experience"][0]["description"] == "<ul><li>Improved throughput by 20%</li></ul>"
+    assert result["experience"][0]["achievements"] == []
     assert result["experience"][0]["team_size"] == "6 engineers"
     assert result["additional_sections"][0]["details"] == ["Mentor"]
     assert result["additional_sections"][1]["title"] == "Patents"
@@ -180,7 +181,35 @@ def test_resume_extractor_normalizes_common_alternate_llm_keys():
     assert result.skills == ["Python", "FastAPI"]
     assert result.experience[0].job_title == "Developer"
     assert result.experience[0].start_date == "June 2024"
-    assert result.experience[0].responsibilities == ["Built APIs", "Reduced latency"]
+    assert result.experience[0].description == "<ul><li>Built APIs</li><li>Reduced latency</li></ul>"
+    assert result.experience[0].responsibilities == []
+
+
+def test_resume_extractor_recovers_bullets_from_malformed_experience_keys():
+    payload = resume_extractor.normalize_resume_payload({
+        "experience": [
+            {"job_title": "Engineer", "company": "Example", "location null, description": ["First bullet", "Second bullet"]},
+            {"job_title": "Analyst", "company": "Sample", "description null, description": ["Third bullet"]},
+        ],
+    })
+
+    assert payload["experience"][0]["description"] == "<ul><li>First bullet</li><li>Second bullet</li></ul>"
+    assert payload["experience"][0]["responsibilities"] == []
+    assert "location null, description" not in payload["experience"][0]
+    assert payload["experience"][1]["description"] == "<ul><li>Third bullet</li></ul>"
+    assert "description null, description" not in payload["experience"][1]
+
+
+def test_resume_extractor_recovers_experience_locations_and_bullets_from_saved_model_aliases():
+    payload = resume_extractor.normalize_resume_payload({
+        "experience": [
+            {"job_title": "Engineer", "location": None, "location_string": "Coimbatore", "responsibilities": [], "responsibilities_and_achievements": ["Built systems"]},
+        ],
+    })
+
+    assert payload["experience"][0]["location"] == "Coimbatore"
+    assert payload["experience"][0]["description"] == "<ul><li>Built systems</li></ul>"
+    assert payload["experience"][0]["responsibilities"] == []
 
 
 def test_resume_extractor_fills_missing_literal_contact_values_from_text():

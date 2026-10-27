@@ -47,7 +47,8 @@ def test_openapi_documents_resume_endpoints(client):
     assert "/resumes/{document_id}/parse" in paths
     assert "/resumes/{document_id}/extract" in paths
     assert "/resumes/{document_id}" in paths
-    assert "/resumes/history" in paths
+    assert "/resumes/latest" in paths
+    assert "/resumes/history" not in paths
     assert "/resumes/{document_id}/profile" in paths
 
 
@@ -83,7 +84,7 @@ def test_ui_build_assets_are_served(client):
     response = client.get(f"/assets/{assets[0].name}")
 
     assert response.status_code == 200
-    assert "Candidate intelligence" in response.text or "resume" in response.text.lower()
+    assert "Profile" in response.text or "resume" in response.text.lower()
 
 
 def test_ui_favicon_is_served(client):
@@ -111,6 +112,7 @@ def test_health_checks_mongodb(client, monkeypatch):
 def test_upload_accepts_text_file_and_returns_id(client, monkeypatch):
     save = Mock(return_value="resume-test-id")
     monkeypatch.setattr(upload_route, "save_original_file", save)
+    monkeypatch.setattr(upload_route, "retain_latest_resume", Mock(return_value=0))
 
     response = client.post(
         "/resumes/upload",
@@ -196,7 +198,7 @@ def test_get_endpoint_returns_resume_without_gridfs_id(client, monkeypatch):
     get_resume.assert_called_once_with("6add939dfffc8e3344105dd8", TEST_USER["app_id"])
 
 
-def test_resume_history_lists_only_authenticated_owner_summaries(client, monkeypatch):
+def test_latest_resume_returns_only_current_profile(client, monkeypatch):
     record = {
         "_id": ObjectId("6add939dfffc8e3344105dd8"),
         "original_filename": "resume.pdf",
@@ -204,22 +206,29 @@ def test_resume_history_lists_only_authenticated_owner_summaries(client, monkeyp
         "created_at": "2026-10-25T12:00:00Z",
         "parsing_status": "completed",
         "llm_status": "completed",
-        "structured_result": {"full_name": "Sample Candidate", "professional_title": "Engineer"},
+        "structured_result": {"full_name": "Sample Candidate", "professional_title": "Engineer", "experience": [{
+            "job_title": "Engineer", "location": None, "location_string": "Pune", "start_date": "01/2024", "end_date": "Present",
+            "responsibilities": [], "responsibilities_and_achievements": ["Built complete feature"],
+        }]},
+        "parsed_text": "Engineer\n01/2024 – Present\nPune",
     }
-    list_records = Mock(return_value=[record.copy()])
-    count_records = Mock(return_value=1)
-    monkeypatch.setattr(history_route, "list_resumes", list_records)
-    monkeypatch.setattr(history_route, "count_resumes", count_records)
+    record["app_id"] = TEST_USER["app_id"]
+    record["parsed_text"] = "must not be returned"
+    get_latest = Mock(return_value=record.copy())
+    monkeypatch.setattr(history_route, "get_latest_resume_for_owner", get_latest)
 
-    response = client.get("/resumes/history")
+    response = client.get("/resumes/latest")
 
     assert response.status_code == 200
-    body = response.json()
-    assert body["items"][0]["document_id"] == "6add939dfffc8e3344105dd8"
-    assert body["items"][0]["candidate_name"] == "Sample Candidate"
-    assert "app_id" not in body["items"][0]
-    list_records.assert_called_once_with(TEST_USER["app_id"], skip=0, limit=50)
-    count_records.assert_called_once_with(TEST_USER["app_id"])
+    body = response.json()["resume"]
+    assert body["document_id"] == "6add939dfffc8e3344105dd8"
+    assert body["structured_result"]["full_name"] == "Sample Candidate"
+    assert body["structured_result"]["experience"][0]["location"] == "Pune"
+    assert body["structured_result"]["experience"][0]["description"] == "<ul><li>Built complete feature</li></ul>"
+    assert body["structured_result"]["experience"][0]["responsibilities"] == []
+    assert "app_id" not in body
+    assert "parsed_text" not in body
+    get_latest.assert_called_once_with(TEST_USER["app_id"])
 
 
 def test_resume_history_profile_is_scoped_to_authenticated_owner(client, monkeypatch):
@@ -243,22 +252,33 @@ def test_resume_history_profile_is_scoped_to_authenticated_owner(client, monkeyp
 def test_structured_profile_edit_updates_existing_owner_record(client, monkeypatch):
     update = Mock(return_value=True)
     monkeypatch.setattr(history_route, "update_resume", update)
-    profile = {"full_name": "Corrected Name", "websites": ["https://example.com"], "skills": ["Python"]}
+    monkeypatch.setattr(history_route, "get_resume_details", Mock(return_value={"parsed_text": ""}))
+    profile = {"full_name": "Corrected Name", "websites": ["https://example.com"], "skills": ["Python"], "experience": [{
+        "job_title": "Engineer", "location": None, "location_string": "Chennai",
+        "responsibilities": [], "responsibilities_and_achievements": ["Built a system", "Improved accuracy"],
+    }]}
 
     response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": profile})
 
     assert response.status_code == 200
     assert response.json()["structured_result"]["full_name"] == "Corrected Name"
+    experience = response.json()["structured_result"]["experience"][0]
+    assert experience["location"] == "Chennai"
+    assert experience["description"] == "<ul><li>Built a system</li><li>Improved accuracy</li></ul>"
+    assert experience["responsibilities"] == []
+    assert "location_string" not in experience
     update.assert_called_once()
     args = update.call_args.args
     assert args[0] == "6add939dfffc8e3344105dd8"
     assert args[1] == TEST_USER["app_id"]
     assert args[2]["structured_result"]["websites"] == ["https://example.com"]
+    assert args[2]["structured_result"]["experience"][0]["description"] == experience["description"]
 
 
 def test_structured_profile_edit_returns_not_found_for_non_owner(client, monkeypatch):
     update = Mock(return_value=False)
     monkeypatch.setattr(history_route, "update_resume", update)
+    monkeypatch.setattr(history_route, "get_resume_details", Mock(return_value={"parsed_text": ""}))
 
     response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": {"full_name": "Other"}})
 
@@ -267,11 +287,54 @@ def test_structured_profile_edit_returns_not_found_for_non_owner(client, monkeyp
     assert update.call_args.args[1] == TEST_USER["app_id"]
 
 
+def test_job_preferences_update_is_scoped_to_authenticated_app_id(client, monkeypatch):
+    upsert = Mock(return_value={"app_id": TEST_USER["app_id"]})
+    monkeypatch.setattr(history_route.postgres, "upsert_job_preferences", upsert)
+    preferences = {
+        "current_ctc": "8 LPA", "expected_ctc": "12 LPA", "expected_ctc_range": "10-14 LPA",
+        "minimum_expected_ctc": "10 LPA", "currency": "INR", "preferred_locations": ["Pune", "Remote"],
+    }
+
+    response = client.put("/resumes/preferences", json={"job_preferences": preferences})
+
+    assert response.status_code == 200
+    assert response.json()["job_preferences"]["preferred_locations"] == ["Pune", "Remote"]
+    upsert.assert_called_once()
+    assert upsert.call_args.args[0] == TEST_USER["app_id"]
+    assert upsert.call_args.args[1]["minimum_expected_ctc"] == "10 LPA"
+
+
+def test_job_preferences_load_uses_authenticated_app_id(client, monkeypatch):
+    load = Mock(return_value={"current_ctc": "8 LPA", "preferred_locations": ["Pune"]})
+    monkeypatch.setattr(history_route.postgres, "get_job_preferences", load)
+
+    response = client.get("/resumes/preferences")
+
+    assert response.status_code == 200
+    assert response.json()["configured"] is True
+    assert response.json()["job_preferences"]["preferred_locations"] == ["Pune"]
+    load.assert_called_once_with(TEST_USER["app_id"])
+
+
+def test_job_preferences_update_returns_setup_instructions_when_table_missing(client, monkeypatch):
+    from psycopg.errors import UndefinedTable
+
+    upsert = Mock(side_effect=UndefinedTable("missing preferences table"))
+    monkeypatch.setattr(history_route.postgres, "upsert_job_preferences", upsert)
+
+    response = client.put("/resumes/preferences", json={"job_preferences": {}})
+
+    assert response.status_code == 503
+    assert "docs/sql/user_job_preferences.sql" in response.json()["detail"]
+    assert upsert.call_args.args[0] == TEST_USER["app_id"]
+
+
 def test_structured_profile_edit_rejects_invalid_data(client, monkeypatch):
     update = Mock(return_value=True)
     monkeypatch.setattr(history_route, "update_resume", update)
+    monkeypatch.setattr(history_route, "get_resume_details", Mock(return_value={"parsed_text": ""}))
 
-    response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": {"graduation_year": "not a year"}})
+    response = client.put("/resumes/6add939dfffc8e3344105dd8/structured-result", json={"structured_result": {"education": [{"graduation_year": "not a year"}]}})
 
     assert response.status_code == 422
     update.assert_not_called()
@@ -340,12 +403,13 @@ def test_rex_manual_profile_interview_returns_dynamic_profile(client, monkeypatc
     interview.assert_called_once()
 
 
-def test_rex_manual_profile_saves_owner_scoped_history_record(client, monkeypatch):
+def test_manual_profile_saves_owner_scoped_latest_record(client, monkeypatch):
     profile = {"full_name": "Deepak Kumar", "professional_title": "Senior Engineer"}
     create = Mock()
     upload = Mock(return_value=ObjectId("6add939dfffc8e3344105dd9"))
     monkeypatch.setattr(ai_resume_route, "create_resume", create)
     monkeypatch.setattr(ai_resume_route.file_bucket, "upload_from_stream", upload)
+    monkeypatch.setattr(ai_resume_route, "retain_latest_resume", Mock(return_value=0))
 
     response = client.post("/resumes/manual-profile", json={"structured_result": profile})
 

@@ -1,6 +1,6 @@
 # NEXPLY API endpoint tracker
 
-Last reviewed: 2026-10-25
+Last reviewed: 2026-10-27
 
 `Implemented` describes whether the route exists in the current application. `Tested` records a live or automated check; the result notes whether persistence or model calls were mocked.
 
@@ -13,17 +13,22 @@ Last reviewed: 2026-10-25
 | `POST /auth/register` | Yes | Yes | Isolated automated tests cover normalization, Argon2id hashing, database-generated `app_id`, token response, and duplicate rejection. PostgreSQL integration remains pending local `DATABASE_URL` setup. |
 | `POST /auth/login` | Yes | Yes | Isolated automated tests cover correct/incorrect credentials, inactive accounts, and generic credential errors. |
 | `GET /auth/me` | Yes | Yes | Tests cover valid, missing, malformed, expired, and forged tokens; PostgreSQL account lookup; and secret-free profile output. |
+| `POST /auth/password-reset/request` | Yes | No | Implemented with SMTP-delivered six-digit OTP, expiring hashed challenge, and generic account-existence response. Configure SMTP values in `.env` before using. |
+| `POST /auth/password-reset/verify` | Yes | No | Implemented with OTP expiration and five-attempt limit; successful verification returns a short-lived single-use reset token. |
+| `POST /auth/password-reset/complete` | Yes | No | Implemented with password confirmation, Argon2id rehash, and atomic one-time token consumption. |
 | `POST /resumes/upload` | Yes | Yes | Requires bearer authentication and a UUID `Idempotency-Key`. Retries for the same user/key/file reuse the same MongoDB record; concurrent duplicate GridFS uploads are cleaned up. |
 | `GET /resumes/{document_id}` | Yes | Yes | Requires bearer authentication and scopes lookup by document id plus PostgreSQL-derived `app_id`; legacy records without ownership are inaccessible. |
-| `GET /resumes/history` | Yes | Yes | Authenticated, paginated resume list; MongoDB query and count both filter by the current user's `app_id`. Returns lightweight summaries, not parsed source text. |
-| `GET /resumes/{document_id}/profile` | Yes | Yes | Authenticated owner-scoped profile detail for the selected history item; returns structured data only and does not return parsed text or GridFS identifiers. |
+| `GET /resumes/latest` | Yes | Yes | Returns only the current profile. Route behavior is covered with mocked repository data; first profile load and each new upload/manual save prune older owner records and GridFS originals. |
+| `GET /resumes/{document_id}/profile` | Yes | Yes | Authenticated owner-scoped profile detail; returns structured data only and does not return parsed text or GridFS identifiers. |
 | `PUT /resumes/{document_id}/structured-result` | Yes | Yes | Validates edited structured data and updates the existing resume record using the authenticated user's `app_id`; does not insert a new document. |
+| `GET /resumes/preferences` | Yes | Yes | Loads preferences from `public.user_job_preferences` using the authenticated PostgreSQL `app_id`; returns empty defaults with `configured: false` if the manual table is not installed. |
+| `PUT /resumes/preferences` | Yes | Yes | Upserts preferences into PostgreSQL using the authenticated `app_id`; client-supplied account identifiers are ignored. |
 | `DELETE /resumes/{document_id}` | Yes | Yes | Owner-scoped hard delete removes the resume record plus its original GridFS file and other GridFS originals associated with the resume. |
 | `GET /resumes/ai/models` | Yes | Yes | Lists locally installed Ollama text-generation models for the optional AI Smart resume writer. |
 | `POST /resumes/{document_id}/ai-resume` | Yes | Yes | Generates a non-persisted profile draft from the owner's saved structured profile, with an optional target job description. |
 | `POST /resumes/{document_id}/rex/rewrite` | Yes | Yes | Rewrites or drafts the requested summary/description from owner-scoped profile facts in 2, 5, or 8 lines (concise, brief, or detail); applies to the unsaved editor draft and persists only after user Save. |
 | `POST /resumes/manual-profile/interview` | Yes | Yes | Authenticated REX interview extracts only user-provided facts and asks one dynamic follow-up; route behavior is mocked in tests, live Ollama interview not yet tested. |
-| `POST /resumes/manual-profile` | Yes | Yes | Validates and saves a manual REX profile as a new authenticated resume-history record with no source file/GridFS object; owner app_id is verified in a mocked route test. |
+| `POST /resumes/manual-profile` | Yes | Yes | Validates and saves a manual profile as the owner's newest resume record, then removes older records and GridFS originals. |
 | `POST /resumes/{document_id}/ai-resume/export` | Yes | Yes | Owner-checked DOCX download generated in memory; does not create a resume or GridFS record. |
 | `POST /resumes/{document_id}/parse` | Yes | Yes | Requires bearer authentication; document reads and parsed-text/status updates are owner-filtered. |
 | `POST /resumes/{document_id}/extract` | Yes | Yes | Requires bearer authentication; document reads and structured-result/status updates are owner-filtered. |
@@ -34,19 +39,22 @@ Last reviewed: 2026-10-25
 ## Database state checked
 
 - The application is already configured to use `nexply` by default (`MONGODB_DATABASE`, overrideable through the environment).
-- `nexply` currently has the `resume` application collection with 4 records; `jd` has not been materialized yet. GridFS uses the supporting `document_files.files` and `document_files.chunks` collections. The fictional end-to-end fixture was stored only in `nexply_human_test`, which was dropped after testing; no fixture record remains in `nexply`.
-- The existing `nexus_ai.documents` record and its original GridFS file are still present. No migration or deletion was performed.
-- The `nexply` resume record `6adda9b650f84544a4aabea5` has parsed text and now has a structured result; `llm_status=completed` and `llm_error` is cleared.
+- The Profile workspace now calls `/resumes/latest`; it retains the newest resume for the signed-in owner and removes older owner records and associated GridFS originals. Uploads and manual saves apply the same latest-only retention.
+- The existing `nexus_ai.documents` record and its original GridFS file remain untouched.
+- PostgreSQL password recovery uses the additive `password_reset_challenges` table. Its migration was applied locally; the existing `public.users` table was not altered.
 
 ## API test run
 
 - Swagger UI and `/openapi.json` both returned HTTP 200; OpenAPI lists health, auth, and protected resume routes.
-- `python -m pytest -q`: 69 passed, 1 existing Starlette deprecation warning. Authentication tests use an isolated mocked PostgreSQL repository; no user was created and no schema or database records were changed.
+- `python -m pytest -q`: 90 passed, 1 existing Starlette deprecation warning. Authentication tests use a mocked PostgreSQL repository.
 - MongoDB owner-filter tests verify resume and JD lookups/updates include both `_id` and `app_id`, create helpers override client-supplied owners with the authenticated owner, and updates cannot change `_id` or `app_id`. Upload tests cover owner metadata and idempotent retries.
-- This checkout's `.env` does not yet define `DATABASE_URL` or `JWT_SECRET_KEY`; a read-only connection attempt as `nexply_app` also confirmed PostgreSQL requires a password. Run a live sign-up/sign-in check after configuring those local values.
+- The built React/TypeScript workspace compiles with `npm run build`; Python source compilation also succeeds.
 - A human-style flow used the fictional fixture at `tests/fixtures/mock_resume.txt` against an isolated API instance and temporary `nexply_human_test` database: upload 201, parse 200 (628 characters), extract 200, and get 200. The original was found in GridFS; parsed text and structured JSON were inline; the response hid the GridFS ID.
 - Human checks matched the sample's name, email, skill, education, employer, and project. The temporary database was dropped and the isolated server was stopped after the run.
 - The existing resume's Ollama extraction was also exercised separately through the API and completed successfully after the thinking/schema fix.
+- Experience normalization was checked against the current MongoDB profile: all seven source bullets are restored into responsibilities, and `location_string` / separate source location lines map into the location field. This compatibility check read the record without modifying it.
+- The Profile UI no longer shows a structured-output panel; it shows editable job preferences, with the structured resume loaded into the right-side blocks. Preferences are stored in PostgreSQL; run `docs/sql/user_job_preferences.sql` manually to create the table.
+- Experience bullets normalize into a rich-text unordered list in the Description field, and malformed model aliases are removed. Location aliases and locations from the parsed source are normalized into the canonical location field.
 
 ## Storage target
 

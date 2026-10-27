@@ -14,7 +14,7 @@ from nexus.core.config import OLLAMA_RESUME_WRITER_MODEL
 from nexus.core.schemas.resume import ResumeData
 from nexus.services.resume_export import build_resume_docx
 from nexus.services.resume_writer import available_resume_models, interview_resume_profile, rewrite_resume_text, write_resume
-from nexus.services.resume_service import get_resume_details
+from nexus.services.resume_service import get_resume_details, retain_latest_resume
 from nexus.storage.mongodb import file_bucket
 from nexus.storage.resume_repository import create_resume
 
@@ -146,6 +146,11 @@ def save_rex_manual_profile(
                 logger.exception("Unable to clean up GridFS file after manual resume save failed")
         logger.exception("Unable to save manually created resume")
         raise HTTPException(status_code=500, detail="Unable to save the manually created resume.") from exc
+
+    try:
+        retain_latest_resume(str(user["app_id"]), document_id)
+    except Exception:
+        logger.exception("Could not remove an older resume after manual profile save")
 
     return {"document_id": document_id, "structured_result": profile}
 

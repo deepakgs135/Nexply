@@ -8,5 +8,3 @@ export type AuthResult = {
   access_token: string;
   user: AuthUser;
 };
-
-export type AppPage = "workspace" | "history";

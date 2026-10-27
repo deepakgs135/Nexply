@@ -1,7 +1,13 @@
 """Password-based registration and signed bearer-token authentication."""
 
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
+import hashlib
+import hmac
 import logging
+import secrets
+import smtplib
+import ssl
 from typing import Annotated
 from uuid import UUID
 
@@ -18,6 +24,14 @@ from nexus.core.config import (
     JWT_AUDIENCE,
     JWT_ISSUER,
     JWT_SECRET_KEY,
+    PASSWORD_RESET_OTP_EXPIRE_MINUTES,
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES,
+    SMTP_FROM_EMAIL,
+    SMTP_HOST,
+    SMTP_PASSWORD,
+    SMTP_PORT,
+    SMTP_USE_TLS,
+    SMTP_USERNAME,
 )
 from nexus.storage import postgres
 
@@ -31,6 +45,15 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
     password: str = Field(min_length=12, max_length=256)
+    confirm_password: str = Field(min_length=12, max_length=256)
+
+    @field_validator("confirm_password")
+    @classmethod
+    def validate_password_confirmation(cls, value: str, info):
+        password = info.data.get("password")
+        if password is not None and value != password:
+            raise ValueError("Passwords do not match.")
+        return value
 
     @field_validator("full_name")
     @classmethod
@@ -54,6 +77,33 @@ class LoginRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr) -> str:
         return str(value).strip().lower()
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> str:
+        return str(value).strip().lower()
+
+
+class PasswordResetVerifyRequest(PasswordResetRequest):
+    otp: str = Field(pattern=r"^\d{6}$")
+
+
+class PasswordResetCompleteRequest(PasswordResetRequest):
+    reset_token: str = Field(min_length=32, max_length=256)
+    new_password: str = Field(min_length=12, max_length=256)
+    confirm_password: str = Field(min_length=12, max_length=256)
+
+    @field_validator("confirm_password")
+    @classmethod
+    def validate_password_confirmation(cls, value: str, info):
+        password = info.data.get("new_password")
+        if password is not None and value != password:
+            raise ValueError("Passwords do not match.")
+        return value
 
 
 class PublicUser(BaseModel):
@@ -111,6 +161,37 @@ def _database_unavailable(exc: Exception) -> HTTPException:
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail="Authentication is temporarily unavailable. Check server configuration and try again.",
     )
+
+
+def _recovery_digest(value: str) -> str:
+    return hmac.new(_signing_key().encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _send_password_reset_email(email: str, code: str) -> None:
+    if not all((SMTP_HOST, SMTP_FROM_EMAIL)):
+        raise RuntimeError("Password recovery email is not configured.")
+    message = EmailMessage()
+    message["Subject"] = "Your NEXPLY password reset code"
+    message["From"] = SMTP_FROM_EMAIL
+    message["To"] = email
+    message.set_content(
+        f"Your NEXPLY password reset code is {code}. It expires in "
+        f"{PASSWORD_RESET_OTP_EXPIRE_MINUTES} minutes. If you did not request this, ignore this email."
+    )
+    context = ssl.create_default_context()
+    if SMTP_USE_TLS:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            if SMTP_USERNAME:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(message)
+    else:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15, context=context) as server:
+            if SMTP_USERNAME:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(message)
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
@@ -196,3 +277,71 @@ def get_current_user(
 @router.get("/me", response_model=PublicUser)
 def read_current_user(user: Annotated[dict, Depends(get_current_user)]):
     return user
+
+
+@router.post("/password-reset/request", status_code=202)
+def request_password_reset(payload: PasswordResetRequest):
+    """Send an expiring email OTP without confirming whether an account exists."""
+    logger.info("Password recovery requested")
+    try:
+        _signing_key()
+        if not all((SMTP_HOST, SMTP_FROM_EMAIL)):
+            raise RuntimeError("Password recovery email is not configured.")
+        user = postgres.get_user_by_email(str(payload.email).lower())
+        if user and user.get("is_active"):
+            code = f"{secrets.randbelow(1_000_000):06d}"
+            postgres.store_password_reset_code(
+                str(user["app_id"]),
+                _recovery_digest(code),
+                datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_OTP_EXPIRE_MINUTES),
+            )
+            try:
+                _send_password_reset_email(str(payload.email), code)
+            except Exception as exc:
+                logger.error("Password recovery email delivery failed (%s)", type(exc).__name__)
+                raise HTTPException(status_code=503, detail="Password recovery email could not be sent. Try again later.") from exc
+    except RuntimeError as exc:
+        logger.error("Password recovery unavailable (%s)", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Password recovery email is not configured. Contact your administrator.") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise _database_unavailable(exc) from exc
+    return {"detail": "If an active account exists for this email, a verification code has been sent."}
+
+
+@router.post("/password-reset/verify")
+def verify_password_reset_code(payload: PasswordResetVerifyRequest):
+    logger.info("Password recovery code submitted")
+    reset_token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    try:
+        verified = postgres.set_reset_token_for_code(
+            str(payload.email).lower(),
+            _recovery_digest(payload.otp),
+            _recovery_digest(reset_token),
+            now,
+            now + timedelta(minutes=PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+        )
+    except Exception as exc:
+        raise _database_unavailable(exc) from exc
+    if not verified:
+        raise HTTPException(status_code=400, detail="The code is invalid or expired. Request a new code and try again.")
+    return {"reset_token": reset_token, "expires_in": PASSWORD_RESET_TOKEN_EXPIRE_MINUTES * 60}
+
+
+@router.post("/password-reset/complete")
+def complete_password_reset(payload: PasswordResetCompleteRequest):
+    logger.info("Password recovery completion submitted")
+    try:
+        changed = postgres.replace_password_with_reset_token(
+            str(payload.email).lower(),
+            _recovery_digest(payload.reset_token),
+            password_hasher.hash(payload.new_password),
+            datetime.now(timezone.utc),
+        )
+    except Exception as exc:
+        raise _database_unavailable(exc) from exc
+    if not changed:
+        raise HTTPException(status_code=400, detail="The password reset session is invalid or expired. Request a new code.")
+    return {"detail": "Your password has been updated. Sign in with your new password."}

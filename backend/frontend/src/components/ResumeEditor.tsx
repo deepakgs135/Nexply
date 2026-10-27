@@ -8,21 +8,22 @@ type Path = (string | number)[];
 type FieldSpec = { key: string; title?: string; multiline?: boolean; number?: boolean };
 
 export default function ResumeEditor({
-  profile, filename, documentId, saving, error, onChange, onSave, onCancel, mode = "edit",
+  profile, filename, documentId, saving, error, onChange, onSave, onCancel, mode = "edit", embedded = false, extraActions,
 }: {
-  profile: Profile; filename?: string; documentId: string; saving: boolean; error: string;
-  onChange: (path: Path, value: unknown) => void; onSave: () => void; onCancel: () => void; mode?: "edit" | "create";
+  profile: Profile; filename?: string; documentId: string; saving: boolean; error: string; extraActions?: ReactNode;
+  onChange: (path: Path, value: unknown) => void; onSave: () => void; onCancel: () => void; mode?: "edit" | "create"; embedded?: boolean;
 }) {
   const additionalSectionsRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
   useEffect(() => {
+    if (embedded) return;
     document.body.classList.add("resume-editor-open");
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !saving) onCancel(); };
     window.addEventListener("keydown", onKey);
     return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("resume-editor-open"); };
-  }, [saving, onCancel]);
+  }, [saving, onCancel, embedded]);
 
   async function rewriteWithRex(path: Path, style: "concise" | "brief" | "detail") {
     if (!documentId) throw new Error("Save this resume before asking REX to rewrite a field.");
@@ -72,12 +73,12 @@ export default function ResumeEditor({
     }
   }
 
-  return <div className="resume-editor-overlay">
-    <header className="resume-editor-header"><div className="resume-editor-brand"><span className="resume-editor-mark">N</span><div><span className="section-eyebrow">NEXPLY RESUME STUDIO</span><strong>{mode === "create" ? "Create your resume" : "Edit your resume"}</strong><small title={filename}>{filename || (mode === "create" ? "New resume draft" : "Structured candidate profile")}</small></div></div><div className="resume-editor-actions"><span className="resume-editor-saved"><Check size={14} /> {mode === "create" ? "Draft saves when you finish" : "Changes save to this resume"}</span><button className="resume-editor-button secondary" type="button" onClick={onCancel} disabled={saving || exporting}><X size={15} /> Cancel</button><button className="resume-editor-button secondary" type="button" onClick={() => void exportResume()} disabled={exporting}><ArrowDownToLine size={15} /> {exporting ? "Exporting…" : "Export DOCX"}</button><button className="resume-editor-button primary" type="button" onClick={onSave} disabled={saving || exporting}>{saving ? "Saving…" : <><Save size={15} /> {mode === "create" ? "Save resume" : "Save changes"}</>}</button></div></header>
-    <main className="resume-editor-main">
+  return <div className={embedded ? "resume-editor-embedded" : "resume-editor-overlay"}>
+    {embedded ? <header className="profile-fields-toolbar"><div><span className="section-eyebrow">PROFILE DETAILS</span><strong>Build your resume block by block</strong><small>All fields are editable. Save to update your latest profile.</small></div><div className="resume-editor-actions">{extraActions}<button className="resume-editor-button secondary" type="button" onClick={onCancel} disabled={saving || exporting}><X size={15} /> Discard</button><button className="resume-editor-button secondary" type="button" onClick={() => void exportResume()} disabled={exporting}>{exporting ? "Exporting…" : <><ArrowDownToLine size={15} /> Export DOCX</>}</button><button className="resume-editor-button primary" type="button" onClick={onSave} disabled={saving || exporting}>{saving ? "Saving…" : <><Save size={15} /> Save profile</>}</button></div></header> : <header className="resume-editor-header"><div className="resume-editor-brand"><span className="resume-editor-mark">N</span><div><span className="section-eyebrow">NEXPLY RESUME STUDIO</span><strong>{mode === "create" ? "Create your resume" : "Edit your resume"}</strong><small title={filename}>{filename || (mode === "create" ? "New resume draft" : "Structured candidate profile")}</small></div></div><div className="resume-editor-actions"><span className="resume-editor-saved"><Check size={14} /> {mode === "create" ? "Draft saves when you finish" : "Changes save to this resume"}</span><button className="resume-editor-button secondary" type="button" onClick={onCancel} disabled={saving || exporting}><X size={15} /> Cancel</button><button className="resume-editor-button secondary" type="button" onClick={() => void exportResume()} disabled={exporting}><ArrowDownToLine size={15} /> {exporting ? "Exporting…" : "Export DOCX"}</button><button className="resume-editor-button primary" type="button" onClick={onSave} disabled={saving || exporting}>{saving ? "Saving…" : <><Save size={15} /> {mode === "create" ? "Save resume" : "Save changes"}</>}</button></div></header>}
+    <main className={`resume-editor-main ${embedded ? "profile-fields-main" : ""}`}>
       <div className="resume-editor-left">
         <div className="resume-editor-content">
-        <div className="resume-editor-intro"><span className="section-eyebrow">MAKE IT YOURS</span><h1>{mode === "create" ? "Build your resume" : "Edit your resume"}</h1><p>Open a section, edit its entries, and review the live resume preview as you work.</p></div>
+        {!embedded && <div className="resume-editor-intro"><span className="section-eyebrow">MAKE IT YOURS</span><h1>{mode === "create" ? "Build your resume" : "Edit your resume"}</h1><p>Open a section, edit its entries, and review the live resume preview as you work.</p></div>}
         <nav className="resume-editor-nav" aria-label="Resume sections">{["profile", "experience", "education", "skills", "projects", "certifications", "publications", "volunteer_experience"].map((key) => <a href={`#edit-${key}`} key={key} onClick={(event) => { event.preventDefault(); const section = document.getElementById(`edit-${key}`) as HTMLDetailsElement | null; if (section) { section.open = true; section.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>{label(key)}</a>)}</nav>
         {error && <div className="ai-error resume-editor-error" role="alert">{error}</div>}
         {exportError && <div className="ai-error resume-editor-error" role="alert">{exportError}</div>}
@@ -116,7 +117,7 @@ export default function ResumeEditor({
         <button className="resume-editor-done-button" type="button" onClick={onSave} disabled={saving}>{saving ? "Saving…" : <><Check size={17} /> Done</>}</button>
         </div>
       </div>
-      <aside className="resume-editor-right"><div className="resume-preview-heading"><div><span className="section-eyebrow">YOUR STORY AT A GLANCE</span><h2>Live preview</h2></div><span>Updates as you type</span></div><div className="resume-paper-wrap"><ResumePreview profile={profile} /></div></aside>
+      {!embedded && <aside className="resume-editor-right"><div className="resume-preview-heading"><div><span className="section-eyebrow">YOUR STORY AT A GLANCE</span><h2>Live preview</h2></div><span>Updates as you type</span></div><div className="resume-paper-wrap"><ResumePreview profile={profile} /></div></aside>}
     </main>
   </div>;
 }

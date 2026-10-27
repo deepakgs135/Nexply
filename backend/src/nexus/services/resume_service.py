@@ -1,7 +1,7 @@
 
 from nexus.core.debug import debug_trace
 from nexus.storage.mongodb import file_bucket
-from nexus.storage.resume_repository import delete_resume_record, get_resume, update_resume
+from nexus.storage.resume_repository import delete_resume_record, get_latest_resume, get_resume, list_other_resume_ids, update_resume
 from gridfs.errors import NoFile
 from nexus.core.parser import extract_text
 from nexus.core.resume_extractor import extract_resume_data
@@ -40,6 +40,27 @@ def delete_resume(document_id: str, app_id: str) -> bool:
             pass
 
     return delete_resume_record(document_id, app_id)
+
+
+@debug_trace
+def retain_latest_resume(app_id: str, keep_document_id: str) -> int:
+    """Remove all older owner records and their GridFS objects."""
+    removed = 0
+    for document_id in list_other_resume_ids(app_id, keep_document_id):
+        if delete_resume(document_id, app_id):
+            removed += 1
+    return removed
+
+
+@debug_trace
+def get_latest_resume_for_owner(app_id: str) -> dict | None:
+    """Return the newest profile and clean up any pre-existing history."""
+    record = get_latest_resume(app_id)
+    if record is None:
+        return None
+    document_id = str(record["_id"])
+    retain_latest_resume(app_id, document_id)
+    return record
 
 
 @debug_trace

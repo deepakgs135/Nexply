@@ -10,6 +10,14 @@ JWT_SECRET_KEY=GENERATE_A_RANDOM_SECRET
 JWT_ISSUER=nexply-api
 JWT_AUDIENCE=nexply-web
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-user
+SMTP_PASSWORD=your-smtp-app-password
+SMTP_FROM_EMAIL=no-reply@example.com
+SMTP_USE_TLS=true
+PASSWORD_RESET_OTP_EXPIRE_MINUTES=10
+PASSWORD_RESET_TOKEN_EXPIRE_MINUTES=10
 ```
 
 Generate a high-entropy signing key locally with:
@@ -37,16 +45,19 @@ FROM pg_indexes
 WHERE schemaname = 'public' AND tablename = 'users';
 ```
 
+Password recovery uses an additional `public.password_reset_challenges` table. Apply `docs/migrations/001_password_reset_challenges.sql` once in pgAdmin's Query Tool while connected to the `nexply` database as its owner/admin. This migration does not change or delete user rows; it grants the existing `nexply_app` role access only to the recovery table. Configure SMTP in `.env` using your provider's credentials (for Gmail, use an app password). Keep all SMTP credentials private.
+
 ## Sign-up and sign-in
 
-- `POST /auth/register` accepts `full_name`, `email`, and a password of at least 12 characters. The service normalizes the email, hashes the password with Argon2id, inserts only the hash, and lets PostgreSQL generate `id` and `app_id`.
+- `POST /auth/register` accepts `full_name`, `email`, `password`, and `confirm_password`. Passwords must match and contain at least 12 characters. The service normalizes the email, hashes the password with Argon2id, inserts only the hash, and lets PostgreSQL generate `id` and `app_id`.
 - `POST /auth/login` verifies the password and account state. Invalid credentials have the same response regardless of whether the email exists.
+- Password recovery uses `POST /auth/password-reset/request`, `/verify`, and `/complete`. The six-digit OTP and reset token are stored only as HMAC hashes, expire, and are single-use; OTP entry is limited to five attempts. The password hash is replaced only after OTP verification.
 - `GET /auth/me` accepts `Authorization: Bearer <access_token>`. The token contains only the PostgreSQL-generated `app_id` as its subject and standard issue/expiry/audience claims. The dependency re-reads the active account from PostgreSQL on every request.
 - The React app keeps the short-lived bearer token in `sessionStorage`; signing out removes it from the current browser session.
 
 ## Data isolation
 
-Resume uploads store the authenticated `app_id` in the MongoDB resume record and the original GridFS metadata. Resume reads, parsing, extraction, and updates filter by both document `_id` and `app_id`. JD repository reads and updates use the same filter. Older MongoDB records without `app_id` remain inaccessible through the authenticated APIs; no migration or reassignment is performed.
+Resume uploads store the authenticated `app_id` in the MongoDB resume record and the original GridFS metadata. Resume reads, parsing, extraction, and updates filter by both document `_id` and `app_id`. The Profile workspace retains only the latest resume per account; a new upload/manual profile replaces older resume records and their associated GridFS files. Existing older records are cleaned when the user loads `/resumes/latest`. JD repository reads and updates use the same owner filter. Records without `app_id` remain inaccessible and are never reassigned.
 
 ## Smoke check
 

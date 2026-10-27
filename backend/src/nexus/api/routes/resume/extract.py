@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from nexus.api.auth import get_current_user
-from nexus.services.resume_service import extract_resume
+from nexus.services.resume_service import CandidateProfileSyncError, extract_resume
 
 router = APIRouter(tags=["Resumes"])
 
@@ -28,6 +28,9 @@ def extract_resume_endpoint(document_id: str, user: Annotated[dict, Depends(get_
             status_code=422,
             detail=str(exc),
         ) from exc
+
+    except CandidateProfileSyncError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     except Exception as exc:
         raise HTTPException(

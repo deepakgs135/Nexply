@@ -216,6 +216,9 @@ def test_latest_resume_returns_only_current_profile(client, monkeypatch):
     record["parsed_text"] = "must not be returned"
     get_latest = Mock(return_value=record.copy())
     monkeypatch.setattr(history_route, "get_latest_resume_for_owner", get_latest)
+    monkeypatch.setattr(history_route.postgres, "get_candidate_profile_source_document_id", Mock(return_value=None))
+    sync_profile = Mock()
+    monkeypatch.setattr(history_route, "sync_candidate_profile_to_sql", sync_profile)
 
     response = client.get("/resumes/latest")
 
@@ -229,6 +232,9 @@ def test_latest_resume_returns_only_current_profile(client, monkeypatch):
     assert "app_id" not in body
     assert "parsed_text" not in body
     get_latest.assert_called_once_with(TEST_USER["app_id"])
+    sync_profile.assert_called_once_with(
+        "6add939dfffc8e3344105dd8", TEST_USER["app_id"], "resume.pdf", body["structured_result"],
+    )
 
 
 def test_resume_history_profile_is_scoped_to_authenticated_owner(client, monkeypatch):
@@ -253,6 +259,8 @@ def test_structured_profile_edit_updates_existing_owner_record(client, monkeypat
     update = Mock(return_value=True)
     monkeypatch.setattr(history_route, "update_resume", update)
     monkeypatch.setattr(history_route, "get_resume_details", Mock(return_value={"parsed_text": ""}))
+    sync_profile = Mock()
+    monkeypatch.setattr(history_route, "sync_candidate_profile_to_sql", sync_profile)
     profile = {"full_name": "Corrected Name", "websites": ["https://example.com"], "skills": ["Python"], "experience": [{
         "job_title": "Engineer", "location": None, "location_string": "Chennai",
         "responsibilities": [], "responsibilities_and_achievements": ["Built a system", "Improved accuracy"],
@@ -273,6 +281,10 @@ def test_structured_profile_edit_updates_existing_owner_record(client, monkeypat
     assert args[1] == TEST_USER["app_id"]
     assert args[2]["structured_result"]["websites"] == ["https://example.com"]
     assert args[2]["structured_result"]["experience"][0]["description"] == experience["description"]
+    sync_profile.assert_called_once()
+    assert sync_profile.call_args.args[0:3] == (
+        "6add939dfffc8e3344105dd8", TEST_USER["app_id"], None,
+    )
 
 
 def test_structured_profile_edit_returns_not_found_for_non_owner(client, monkeypatch):
@@ -410,6 +422,8 @@ def test_manual_profile_saves_owner_scoped_latest_record(client, monkeypatch):
     monkeypatch.setattr(ai_resume_route, "create_resume", create)
     monkeypatch.setattr(ai_resume_route.file_bucket, "upload_from_stream", upload)
     monkeypatch.setattr(ai_resume_route, "retain_latest_resume", Mock(return_value=0))
+    sync_profile = Mock()
+    monkeypatch.setattr(ai_resume_route, "sync_candidate_profile_to_sql", sync_profile)
 
     response = client.post("/resumes/manual-profile", json={"structured_result": profile})
 
@@ -432,6 +446,9 @@ def test_manual_profile_saves_owner_scoped_latest_record(client, monkeypatch):
     assert metadata["stage"] == "manual_resume"
     assert metadata["document_id"] == response.json()["document_id"]
     assert metadata["app_id"] == TEST_USER["app_id"]
+    sync_profile.assert_called_once_with(
+        response.json()["document_id"], TEST_USER["app_id"], filename, response.json()["structured_result"],
+    )
 
 
 def test_rex_manual_profile_cleans_gridfs_file_when_record_save_fails(client, monkeypatch):

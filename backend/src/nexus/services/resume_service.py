@@ -5,6 +5,30 @@ from nexus.storage.resume_repository import delete_resume_record, get_latest_res
 from gridfs.errors import NoFile
 from nexus.core.parser import extract_text
 from nexus.core.resume_extractor import extract_resume_data
+from nexus.storage import postgres
+
+
+class CandidateProfileSyncError(RuntimeError):
+    """Mongo profile was saved, but its PostgreSQL mirror could not be updated."""
+
+
+@debug_trace
+def sync_candidate_profile_to_sql(
+    document_id: str,
+    app_id: str,
+    filename: str | None,
+    structured_result: dict,
+) -> None:
+    """Keep one SQL candidate_profiles row aligned with the user's Mongo profile."""
+    try:
+        postgres.upsert_candidate_profile(app_id, document_id, filename, structured_result)
+    except Exception as exc:
+        update_resume(document_id, app_id, {
+            "sql_sync_status": "failed",
+            "sql_sync_error": "PostgreSQL profile synchronization failed.",
+        })
+        raise CandidateProfileSyncError("MongoDB saved the profile, but PostgreSQL synchronization failed.") from exc
+    update_resume(document_id, app_id, {"sql_sync_status": "completed", "sql_sync_error": None})
 
 
 @debug_trace
@@ -166,13 +190,6 @@ def extract_resume(document_id: str, app_id: str) -> dict:
             raise LookupError(
                 "Resume record disappeared during extraction."
             )
-
-        return {
-            "document_id": document_id,
-            "llm_status": "completed",
-            "structured_result": structured_result,
-        }
-
     except Exception as exc:
         # Record failure so the client can inspect the current status.
         update_resume(
@@ -184,3 +201,16 @@ def extract_resume(document_id: str, app_id: str) -> dict:
             },
         )
         raise
+
+    sync_candidate_profile_to_sql(
+        document_id,
+        app_id,
+        resume.get("original_filename"),
+        structured_result,
+    )
+    return {
+        "document_id": document_id,
+        "llm_status": "completed",
+        "structured_result": structured_result,
+        "sql_sync_status": "completed",
+    }

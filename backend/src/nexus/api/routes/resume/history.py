@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, ValidationError
 from psycopg.errors import UndefinedTable
 
 from nexus.api.auth import get_current_user
-from nexus.services.resume_service import get_latest_resume_for_owner, get_resume_details
+from nexus.services.resume_service import CandidateProfileSyncError, get_latest_resume_for_owner, get_resume_details, sync_candidate_profile_to_sql
 from nexus.services.resume_service import delete_resume
 from nexus.core.schemas.resume import ResumeData
 from nexus.storage.resume_repository import update_resume
@@ -50,6 +50,15 @@ def latest_resume_profile(user: Annotated[dict, Depends(get_current_user)]):
     structured_result = normalize_resume_payload(record.get("structured_result") or {}) if record.get("structured_result") else None
     if structured_result:
         fill_experience_locations_from_source(structured_result, record.get("parsed_text") or "")
+        document_id = str(record["_id"])
+        try:
+            mirrored_document_id = postgres.get_candidate_profile_source_document_id(user["app_id"])
+            if mirrored_document_id != document_id or record.get("sql_sync_status") != "completed":
+                sync_candidate_profile_to_sql(
+                    document_id, user["app_id"], record.get("original_filename"), structured_result,
+                )
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Could not synchronize the current MongoDB profile to PostgreSQL.") from exc
     return {"resume": {
         "document_id": str(record.pop("_id")),
         "original_filename": record.get("original_filename"),
@@ -100,6 +109,12 @@ def update_structured_result(
 
     if not update_resume(document_id, user["app_id"], {"structured_result": profile, "llm_status": "completed", "llm_error": None}):
         raise HTTPException(status_code=404, detail="Resume not found.")
+    try:
+        sync_candidate_profile_to_sql(
+            document_id, user["app_id"], record.get("original_filename"), profile,
+        )
+    except CandidateProfileSyncError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"document_id": document_id, "structured_result": profile}
 
 

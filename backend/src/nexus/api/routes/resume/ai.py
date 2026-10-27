@@ -14,7 +14,7 @@ from nexus.core.config import OLLAMA_RESUME_WRITER_MODEL
 from nexus.core.schemas.resume import ResumeData
 from nexus.services.resume_export import build_resume_docx
 from nexus.services.resume_writer import available_resume_models, interview_resume_profile, rewrite_resume_text, write_resume
-from nexus.services.resume_service import get_resume_details, retain_latest_resume
+from nexus.services.resume_service import CandidateProfileSyncError, get_resume_details, retain_latest_resume, sync_candidate_profile_to_sql
 from nexus.storage.mongodb import file_bucket
 from nexus.storage.resume_repository import create_resume
 
@@ -151,6 +151,11 @@ def save_rex_manual_profile(
         retain_latest_resume(str(user["app_id"]), document_id)
     except Exception:
         logger.exception("Could not remove an older resume after manual profile save")
+
+    try:
+        sync_candidate_profile_to_sql(document_id, str(user["app_id"]), filename, profile)
+    except CandidateProfileSyncError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return {"document_id": document_id, "structured_result": profile}
 

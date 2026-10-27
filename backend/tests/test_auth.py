@@ -63,6 +63,26 @@ def test_job_preferences_upsert_updates_by_app_id(monkeypatch):
     assert result == {"app_id": TEST_APP_ID}
 
 
+def test_candidate_profile_upsert_keeps_one_row_per_app_id(monkeypatch):
+    connection = Mock()
+    connection.__enter__ = Mock(return_value=connection)
+    connection.__exit__ = Mock(return_value=False)
+    monkeypatch.setattr(postgres, "_connect", lambda: connection)
+
+    postgres.upsert_candidate_profile(TEST_APP_ID, "mongo-document-id", "resume.pdf", {
+        "full_name": "Casey Rivera", "references": ["Available on request"],
+        "skills": ["Python"], "experience": [],
+    })
+
+    query, values = connection.execute.call_args.args
+    assert "INSERT INTO public.candidate_profiles" in query
+    assert "ON CONFLICT (app_id) DO UPDATE SET" in query
+    assert "references_list = EXCLUDED.references_list" in query
+    assert values[0] == TEST_APP_ID
+    assert values[1] == "mongo-document-id"
+    assert values[9].obj == ["Python"]
+
+
 def test_registration_normalizes_email_hashes_password_and_returns_generated_app_id(client, monkeypatch):
     monkeypatch.setattr(auth, "JWT_SECRET_KEY", TEST_SECRET)
     created = {}

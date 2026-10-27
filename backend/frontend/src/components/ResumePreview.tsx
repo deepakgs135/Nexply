@@ -1,0 +1,41 @@
+import type { ReactNode } from "react";
+import { isMissingFieldName, isMissingValue, label, objectList, stringList, valueText, type Profile, type RecordItem } from "../shared/resumeFormat";
+import { RichTextContent } from "./RichTextEditor";
+
+function PreviewSection({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="resume-preview-section"><h3>{title}</h3>{children}</section>;
+}
+
+function ExtraPreviewRows({ item, known }: { item: RecordItem; known: string[] }) {
+  const omitted = new Set([...known, "model_config"]);
+  const extras = Object.entries(item).filter(([key, value]) => !omitted.has(key) && !isMissingFieldName(key) && !isMissingValue(value));
+  return <>{extras.map(([key, value]) => <p key={key}><b>{label(key)}:</b> {valueText(value)}</p>)}</>;
+}
+
+export function ResumePreview({ profile }: { profile: Profile }) {
+  const experiences = objectList(profile.experience);
+  const education = objectList(profile.education);
+  const projects = objectList(profile.projects);
+  const publications = objectList(profile.publications);
+  const volunteer = objectList(profile.volunteer_experience);
+  const additional = objectList(profile.additional_sections);
+  const text = (value: unknown) => valueText(value);
+  const dateRange = (item: RecordItem) => [text(item.start_date), text(item.end_date)].filter(Boolean).join(" – ");
+  const bulletList = (values: unknown) => (Array.isArray(values) ? values : []).filter((entry) => !isMissingValue(entry)).map((entry, index) => <li key={index}><RichTextContent value={typeof entry === "string" ? entry : valueText(entry)} /></li>);
+  const contact = [text(profile.email), text(profile.phone), text(profile.location), ...stringList(profile.websites)].filter(Boolean);
+  return <article className="resume-paper" aria-label="Resume live preview"><header className="resume-paper-header"><h1>{text(profile.full_name) || "Your name"}</h1>{text(profile.professional_title) && <p className="resume-paper-title">{text(profile.professional_title)}</p>}<p className="resume-paper-contact">{contact.map((item, index) => <span key={index}>{item}</span>)}</p></header>
+    {text(profile.professional_summary) && <PreviewSection title="Profile"><div className="resume-rich-content"><RichTextContent value={String(profile.professional_summary)} /></div></PreviewSection>}
+    {experiences.length > 0 && <PreviewSection title="Experience">{experiences.map((item, index) => { const bullets = [...(Array.isArray(item.responsibilities) ? item.responsibilities : []), ...(Array.isArray(item.achievements) ? item.achievements : [])]; return <div className="resume-preview-entry" key={index}><div className="resume-preview-entry-heading"><strong>{[text(item.job_title || item.title), text(item.company)].filter(Boolean).join(" · ") || "Role"}</strong><time>{dateRange(item)}</time></div>{[text(item.location), text(item.employment_type)].filter(Boolean).length > 0 && <small>{[text(item.location), text(item.employment_type)].filter(Boolean).join(" · ")}</small>}{text(item.description) && <div className="resume-rich-content"><RichTextContent value={String(item.description)} /></div>}{bullets.some((entry) => !isMissingValue(entry)) && <ul>{bulletList(bullets)}</ul>}{stringList(item.technologies).length > 0 && <p><b>Technologies:</b> {stringList(item.technologies).join(", ")}</p>}<ExtraPreviewRows item={item} known={["job_title", "title", "company", "location", "employment_type", "start_date", "end_date", "description", "responsibilities", "achievements", "technologies"]} /></div>; })}</PreviewSection>}
+    {education.length > 0 && <PreviewSection title="Education">{education.map((item, index) => <div className="resume-preview-entry" key={index}><div className="resume-preview-entry-heading"><strong>{[text(item.degree), text(item.field_of_study)].filter(Boolean).join(", ") || "Education"}</strong><time>{dateRange(item) || text(item.graduation_year)}</time></div><p>{[text(item.institution), text(item.location), text(item.cgpa_or_percentage)].filter(Boolean).join(" · ")}</p>{stringList(item.coursework).length > 0 && <p><b>Coursework:</b> {stringList(item.coursework).join(", ")}</p>}{stringList(item.honors).length > 0 && <p><b>Honors:</b> {stringList(item.honors).join(", ")}</p>}<ExtraPreviewRows item={item} known={["degree", "field_of_study", "institution", "location", "start_date", "end_date", "graduation_year", "cgpa_or_percentage", "coursework", "honors"]} /></div>)}</PreviewSection>}
+    {stringList(profile.skills).length > 0 && <PreviewSection title="Skills"><p>{stringList(profile.skills).join(" · ")}</p></PreviewSection>}
+    {projects.length > 0 && <PreviewSection title="Projects">{projects.map((item, index) => { const bullets = [...(Array.isArray(item.responsibilities) ? item.responsibilities : []), ...(Array.isArray(item.outcomes) ? item.outcomes : [])]; return <div className="resume-preview-entry" key={index}><div className="resume-preview-entry-heading"><strong>{text(item.name) || "Project"}</strong><time>{dateRange(item)}</time></div>{text(item.role) && <small>{text(item.role)}</small>}{text(item.description) && <div className="resume-rich-content"><RichTextContent value={String(item.description)} /></div>}{bullets.some((entry) => !isMissingValue(entry)) && <ul>{bulletList(bullets)}</ul>}{stringList(item.technologies).length > 0 && <p><b>Technologies:</b> {stringList(item.technologies).join(", ")}</p>}{text(item.url) && <p>{text(item.url)}</p>}<ExtraPreviewRows item={item} known={["name", "role", "start_date", "end_date", "description", "responsibilities", "outcomes", "technologies", "url"]} /></div>; })}</PreviewSection>}
+    {stringList(profile.certifications).length > 0 && <PreviewSection title="Certifications"><ul>{bulletList(profile.certifications)}</ul></PreviewSection>}
+    {stringList(profile.awards).length > 0 && <PreviewSection title="Awards"><ul>{bulletList(profile.awards)}</ul></PreviewSection>}
+    {stringList(profile.languages).length > 0 && <PreviewSection title="Languages"><p>{stringList(profile.languages).join(" · ")}</p></PreviewSection>}
+    {publications.length > 0 && <PreviewSection title="Research & Publications">{publications.map((item, index) => <div className="resume-preview-entry" key={index}><strong>{text(item.title)}</strong><p>{[text(item.publisher), text(item.publication_date), text(item.url)].filter(Boolean).join(" · ")}</p>{text(item.description) && <div className="resume-rich-content"><RichTextContent value={String(item.description)} /></div>}<ExtraPreviewRows item={item} known={["title", "publisher", "publication_date", "url", "description"]} /></div>)}</PreviewSection>}
+    {volunteer.length > 0 && <PreviewSection title="Volunteer Experience">{volunteer.map((item, index) => { const bullets = [...(Array.isArray(item.responsibilities) ? item.responsibilities : []), ...(Array.isArray(item.achievements) ? item.achievements : [])]; return <div className="resume-preview-entry" key={index}><strong>{[text(item.job_title), text(item.company)].filter(Boolean).join(" · ")}</strong><p>{[dateRange(item), text(item.location)].filter(Boolean).join(" · ")}</p>{text(item.description) && <div className="resume-rich-content"><RichTextContent value={String(item.description)} /></div>}{bullets.some((entry) => !isMissingValue(entry)) && <ul>{bulletList(bullets)}</ul>}{stringList(item.technologies).length > 0 && <p><b>Skills / tools:</b> {stringList(item.technologies).join(", ")}</p>}<ExtraPreviewRows item={item} known={["job_title", "company", "location", "employment_type", "start_date", "end_date", "description", "responsibilities", "achievements", "technologies"]} /></div>; })}</PreviewSection>}
+    {stringList(profile.interests).length > 0 && <PreviewSection title="Interests"><p>{stringList(profile.interests).join(" · ")}</p></PreviewSection>}
+    {stringList(profile.references).length > 0 && <PreviewSection title="References"><ul>{bulletList(profile.references)}</ul></PreviewSection>}
+    {additional.map((item, index) => <PreviewSection title={text(item.title) || `Additional section ${index + 1}`} key={index}>{Array.isArray(item.details) && item.details.some((detail) => !isMissingValue(detail)) && <ul>{bulletList(item.details)}</ul>}<ExtraPreviewRows item={item} known={["title", "details"]} /></PreviewSection>)}
+  </article>;
+}

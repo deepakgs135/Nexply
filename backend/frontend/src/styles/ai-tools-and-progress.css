@@ -1,0 +1,83 @@
+.ai-form-field select,.ai-form-field textarea { width: 100%; padding: 10px 11px; border: 1px solid #d8e3eb; border-radius: 8px; outline: 0; background: #fff; color: #314b60; font: inherit; font-size: 12px; line-height: 1.5; }
+.ai-form-field textarea { resize: vertical; min-height: 110px; }
+.ai-form-field select:focus,.ai-form-field textarea:focus { border-color: #72bfdd; box-shadow: 0 0 0 3px #eaf8fc; }
+.ai-form-field small { color: #91a0ac; font-size: 10px; font-weight: 400; }
+.ai-error { padding: 10px 12px; border: 1px solid #f2d6d9; border-radius: 8px; background: #fff5f5; color: #a5434f; font-size: 11px; }
+.ai-progress { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid #dceaf4; border-radius: 9px; background: #f5fbfe; color: #486279; }
+.ai-spinner { display: grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 50%; background: #e5f4fb; color: #5592d3; animation: spin 1.5s linear infinite; }
+.ai-progress span:last-child { display: grid; gap: 3px; }
+.ai-progress strong { font-size: 11px; }
+.ai-progress small { color: #8497a6; font-size: 10px; }
+.ai-result-card { overflow: hidden; border: 1px solid #d7e5ed; border-radius: 10px; background: #fbfdfe; }
+.ai-result-heading { padding: 14px; background: linear-gradient(120deg,#eef8fc,#f7f5ff); }
+.ai-result-heading > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ai-result-heading > div small { color: #8192a0; font-size: 9px; }
+.ai-result-heading > strong { display: block; margin-top: 9px; color: #2a4053; font-size: 15px; }
+.ai-result-heading > p { margin: 3px 0 0; color: #628096; font-size: 11px; }
+.ai-result-summary { margin: 0; padding: 13px 14px; color: #566e81; font-size: 11px; line-height: 1.65; }
+.ai-result-counts { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 14px 14px; }
+.ai-result-counts span { padding: 5px 8px; border: 1px solid #e1ebf0; border-radius: 20px; background: #fff; color: #6e8291; font-size: 9px; }
+.ai-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid #eaf0f4; background: #fcfdfe; }
+.ai-primary-button,.ai-secondary-button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 1px solid #d7e2ea; border-radius: 7px; background: #fff; color: #5e7485; font-size: 11px; font-weight: 650; }
+.ai-primary-button { border-color: #568fc6; background: linear-gradient(120deg,#388dbc,#686ec8); color: #fff; box-shadow: 0 4px 10px rgb(68 127 184 / 18%); }
+.ai-primary-button:disabled,.ai-secondary-button:disabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 620px) { .ai-modal-backdrop { padding: 9px; } .ai-modal-header,.ai-modal-body { padding-right: 15px; padding-left: 15px; } .ai-modal-footer { flex-wrap: wrap; padding: 12px 15px; } .ai-modal-footer button { flex: 1; } }
+.resume-editor-overlay { position: fixed; z-index: 1200; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f7f3; color: #263a35; }
+.resume-editor-header { display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 28px; border-bottom: 1px solid #d5e3db; background: #f9fcfa; box-shadow: 0 2px 8px rgb(39 73 57 / 4%); }
+.resume-editor-brand,.resume-editor-actions { display: flex; align-items: center; gap: 12px; }
+.resume-editor-mark { display: grid; width: 42px; height: 42px; flex: none; place-items: center; border-radius: 12px; background: #247660; color: white; font-family: Georgia,serif; font-size: 21px; font-weight: 700; }
+.resume-editor-brand > div { display: grid; gap: 2px; }
+.resume-editor-brand strong { color: #223b32; font-family: Georgia,serif; font-size: 17px; }
+.resume-editor-brand small { max-width: 320px; overflow: hidden; color: #82938c; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.resume-editor-saved { display: inline-flex; align-items: center; gap: 5px; margin-right: 5px; color: #698078; font-size: 11px; white-space: nowrap; }
+.resume-editor-saved svg { color: #2a8a6e; }
+.resume-editor-button { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 1px solid #cedbd3; border-radius: 8px; background: #fbfdfb; color: #41594f; font-size: 11px; font-weight: 650; white-space: nowrap; box-shadow: 0 2px 5px rgb(28 59 42 / 7%); }
+.resume-editor-button:hover:not(:disabled) { border-color: #96bca8; background: #fff; }
+.resume-editor-button.primary { border-color: #247660; background: #247660; color: #fff; }
+.resume-editor-button.primary:hover:not(:disabled) { background: #1d6654; }
+.resume-editor-button:disabled { cursor: not-allowed; opacity: .6; }
+.resume-editor-main { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0,1.07fr) minmax(470px,.93fr); gap: 0; overflow: hidden; }
+.resume-editor-left { overflow-y: auto; padding: 25px clamp(20px,4vw,60px) 55px; scroll-behavior: smooth; }
+.resume-editor-intro { padding: 8px 0 17px; }
+.resume-editor-intro .section-eyebrow,.resume-preview-heading .section-eyebrow { color: #287b66; font-size: 10px; letter-spacing: 1px; }
+.resume-editor-intro h1 { margin: 7px 0 5px; color: #1e3930; font-family: Georgia,serif; font-size: clamp(28px,3vw,40px); letter-spacing: -.7px; }
+.resume-editor-intro p { margin: 0; color: #70837a; font-size: 12px; line-height: 1.55; }
+.resume-editor-nav { position: sticky; z-index: 3; top: -25px; display: flex; gap: 7px; overflow-x: auto; margin: 0 -8px 22px; padding: 11px 8px; background: #f1f7f3; scrollbar-width: thin; }
+.resume-editor-nav a { flex: none; padding: 8px 12px; border: 1px solid #d4e1d9; border-radius: 22px; background: #fbfdfb; color: #53695f; font-size: 10px; text-decoration: none; }
+.resume-editor-nav a:hover { border-color: #9bc7b2; background: #e5f2e9; color: #28694f; }
+.resume-edit-section { padding: 9px 0 27px; scroll-margin-top: 58px; }
+.resume-edit-title { display: flex; align-items: center; gap: 12px; margin-bottom: 17px; }
+.resume-edit-title > span { display: grid; width: 33px; height: 33px; flex: none; place-items: center; border-radius: 9px; background: #dbeee1; color: #38765f; font-size: 10px; font-weight: 700; }
+.resume-edit-title h2 { flex: none; margin: 0; color: #1f3930; font-family: Georgia,serif; font-size: 21px; }
+.resume-edit-title i { height: 1px; flex: 1; background: #cbded2; }
+.resume-edit-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 16px; }
+.resume-edit-field { display: grid; min-width: 0; align-content: start; gap: 7px; color: #5c7268; font-size: 11px; font-weight: 650; }
+.resume-edit-field.full-width { grid-column: 1 / -1; }
+.resume-edit-field > input,.resume-edit-field > textarea,.resume-list-row input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; border: 1px solid #cbdcd1; border-radius: 9px; outline: 0; background: #f9fcfa; color: #263d34; font: 13px/1.5 "Segoe UI",sans-serif; box-shadow: 0 2px 5px rgb(36 67 48 / 7%); transition: border-color .15s,box-shadow .15s,background .15s; }
+.resume-edit-field > textarea { min-height: 102px; resize: vertical; }
+.resume-edit-field > input:focus,.resume-edit-field > textarea:focus,.resume-list-row input:focus { border-color: #6ea98d; background: #fff; box-shadow: 0 0 0 3px rgb(86 154 119 / 13%); }
+.resume-list-editor { display: grid; gap: 8px; }
+.resume-list-title { color: #5c7268; font-size: 11px; font-weight: 650; }
+.resume-list-row { display: flex; align-items: center; gap: 7px; }
+.resume-list-row input { flex: 1; }
+.resume-list-row button,.resume-entry-editor > header > button { display: grid; width: 33px; height: 34px; flex: none; place-items: center; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #82948a; }
+.resume-list-row button:hover,.resume-entry-editor > header > button:hover { border-color: #f0d7d8; background: #fff6f6; color: #aa5961; }
+.resume-add-button { display: inline-flex; width: fit-content; min-height: 37px; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid #d1e1d7; border-radius: 8px; background: #f7fbf8; color: #3c705a; font-size: 11px; font-weight: 650; box-shadow: 0 2px 5px rgb(36 67 48 / 5%); }
+.resume-add-button:hover { border-color: #9fc6ad; background: #e9f4ec; }
+.resume-entry-editor { margin: 0 0 13px; padding: 15px; border: 1px solid #d0dfd5; border-radius: 10px; background: #f8fbf9; }
+.resume-entry-editor > header { display: flex; align-items: center; gap: 9px; margin-bottom: 13px; }
+.resume-entry-editor > header strong { flex: 1; color: #294438; font-size: 13px; }
+.resume-entry-grip { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; background: #dcefe2; color: #488169; font-size: 18px; }
+.collection-add { margin-top: 1px; }
+.resume-editor-error { margin: 0 0 16px; font-size: 11px; }
+.resume-editor-right { display: flex; min-height: 0; flex-direction: column; padding: 27px clamp(18px,3vw,48px) 25px; border-left: 1px solid #d7e3da; background: #f1f7f3; }
+.resume-preview-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 4px 0 16px; }
+.resume-preview-heading h2 { margin: 5px 0 0; color: #203b31; font-family: Georgia,serif; font-size: 24px; }
+.resume-preview-heading > span { color: #788980; font-size: 10px; white-space: nowrap; }
+.resume-paper-wrap { min-height: 0; flex: 1; overflow: auto; padding: 4px 2px 20px; }
+.resume-paper { width: min(100%,760px); min-height: 950px; margin: 0 auto; padding: 48px clamp(28px,4.5vw,68px); background: #fff; color: #29342f; font: 10px/1.55 Arial,sans-serif; box-shadow: 0 8px 30px rgb(37 64 48 / 12%); }
+.resume-paper-header { padding-bottom: 12px; border-bottom: 1px solid #9bb8a8; text-align: center; }
+.resume-paper-header h1 { margin: 0; color: #26342e; font-size: 26px; letter-spacing: .3px; }
+.resume-paper-title { margin: 4px 0; color: #586b61; font-size: 12px; }
+.resume-paper-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px 10px; margin: 9px 0 0; color: #586b61; font-size: 8px; overflow-wrap: anywhere; }
+.resume-preview-section { margin-top: 17px; }

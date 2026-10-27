@@ -1,0 +1,32 @@
+.profile-fields-toolbar { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e8edf1; background: #fff; }
+.profile-fields-toolbar > div:first-child { display: grid; gap: 4px; }
+.profile-fields-toolbar strong { color: #2d4355; font-size: 12px; }
+.profile-fields-toolbar small { color: #8796a2; font-size: 8px; }
+.profile-fields-toolbar .resume-editor-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.profile-fields-toolbar .resume-editor-button { min-height: 33px; padding: 0 9px; font-size: 9px; }
+.resume-editor-main.profile-fields-main { display: block; min-height: 0; background: #fff; }
+.profile-fields-main .resume-editor-left { display: block; min-height: 0; overflow: visible; padding: 0; background: #fff; }
+.profile-fields-main .resume-editor-content { min-height: 0; overflow: visible; padding: 12px 15px 0; }
+.profile-fields-main .resume-editor-nav { position: sticky; z-index: 2; top: 0; overflow-x: auto; padding: 7px 0; background: #fff; }
+.profile-fields-main .flow-section { margin-bottom: 9px; border-radius: 9px; }
+.profile-fields-main .flow-section > summary { min-height: 49px; padding: 9px 12px; }
+.profile-fields-main .flow-section .resume-edit-title > span { width: 26px; height: 26px; font-size: 8px; }
+.profile-fields-main .flow-section .resume-edit-title h2 { font-size: 13px; }
+.profile-fields-main .flow-section > .resume-edit-grid,.profile-fields-main .flow-section > .resume-list-editor,.profile-fields-main .flow-section > .resume-entry-editor,.profile-fields-main .flow-section > .resume-collection-actions { margin-right: 12px; margin-left: 12px; }
+.profile-fields-main .flow-section > .resume-edit-grid,.profile-fields-main .flow-section > .resume-list-editor { padding-bottom: 13px; }
+.profile-fields-main .resume-edit-field > input,.profile-fields-main .resume-edit-field > textarea,.profile-fields-main .resume-list-row input { min-height: 37px; font-size: 10px; }
+.profile-fields-main .rich-text-canvas { min-height: 90px; }
+.profile-fields-main .resume-editor-done-button { min-height: 43px; margin-bottom: 16px; }
+@media (max-width: 980px) {
+  .profile-workspace { grid-template-columns: minmax(240px,.8fr) minmax(0,1.2fr); }
+  .profile-fields-toolbar { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 700px) {
+  .profile-workspace { grid-template-columns: 1fr; }
+  .profile-extraction-card { max-height: 70vh; }
+  .profile-fields-column { min-height: 400px; }
+  .profile-start-state { min-height: 400px; }
+  .profile-fields-toolbar { position: sticky; z-index: 3; top: 0; }
+  .profile-fields-toolbar .resume-editor-actions { width: 100%; }
+  .profile-fields-toolbar .resume-editor-button { flex: 1; justify-content: center; }
+}

@@ -51,6 +51,13 @@ def latest_resume_profile(user: Annotated[dict, Depends(get_current_user)]):
     if structured_result:
         fill_experience_locations_from_source(structured_result, record.get("parsed_text") or "")
         document_id = str(record["_id"])
+        if structured_result != record.get("structured_result"):
+            update_resume(document_id, user["app_id"], {
+                "structured_result": structured_result,
+                "llm_status": "completed",
+                "llm_error": None,
+            })
+            record["sql_sync_status"] = "pending"
         try:
             mirrored_document_id = postgres.get_candidate_profile_source_document_id(user["app_id"])
             if mirrored_document_id != document_id or record.get("sql_sync_status") != "completed":

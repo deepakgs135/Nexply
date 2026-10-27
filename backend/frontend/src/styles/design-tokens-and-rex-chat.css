@@ -1,0 +1,84 @@
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #172a3a;
+  background: #f2f5f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #172a3a;
+  --muted: #728293;
+  --line: #e4eaf0;
+  --sky: #39a6d4;
+  --sky-dark: #1582b3;
+  --sky-soft: #e8f6fc;
+  --sky-pale: #f4fbfe;
+  --green: #238564;
+  --red: #b64b56;
+}
+
+.rex-manual-start { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 13px; border: 1px solid var(--sky); border-radius: 9px; background: var(--sky-soft); color: var(--sky-dark); font-size: 12px; font-weight: 700; cursor: pointer; }
+.candidate-intro-actions { display: flex; align-items: center; gap: 10px; }
+.rex-manual-start:hover:not(:disabled) { background: #dff3fb; }
+.rex-manual-start:disabled { opacity: .55; cursor: not-allowed; }
+.rex-interview-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 22px; background: rgba(14, 31, 45, .48); backdrop-filter: blur(4px); }
+.rex-interview { display: flex; width: min(760px, 100%); max-height: min(860px, 94vh); flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 28px 90px rgba(14, 38, 55, .24); }
+.rex-interview > header { display: flex; align-items: flex-start; gap: 13px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+.rex-interview-mark { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: var(--sky-soft); color: var(--sky-dark); }
+.rex-interview > header div { flex: 1; }
+.rex-interview > header small { color: var(--sky-dark); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.rex-interview > header h2 { margin: 4px 0; color: var(--ink); font-size: 19px; }
+.rex-interview > header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.rex-interview > header > button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.rex-chat-messages { display: flex; min-height: 250px; flex: 1; flex-direction: column; gap: 13px; overflow: auto; padding: 20px 22px; background: #f7fafc; }
+.rex-chat-message { max-width: 84%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 14px; background: white; color: var(--ink); }
+.rex-chat-message.user { align-self: flex-end; border-color: #b9dfec; background: var(--sky-soft); }
+.rex-chat-message > span { display: flex; align-items: center; gap: 5px; color: var(--sky-dark); font-size: 10px; font-weight: 800; }
+.rex-chat-message p { margin: 5px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+.rex-chat-working { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+.rex-profile-progress { display: flex; gap: 8px; padding: 10px 22px; color: var(--muted); font-size: 11px; }
+.rex-profile-progress svg { flex: 0 0 auto; color: var(--sky-dark); }
+.rex-chat-composer { display: flex; align-items: flex-end; gap: 10px; padding: 13px 22px; border-top: 1px solid var(--line); }
+.rex-chat-composer textarea { min-height: 74px; flex: 1; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; }
+.rex-interview > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.rex-interview > footer > div { display: flex; gap: 8px; }
+@media (max-width: 600px) { .candidate-intro-actions { align-items: stretch; flex-wrap: wrap; } .rex-interview-backdrop { padding: 8px; } .rex-interview { max-height: 96vh; } .rex-interview > header,.rex-chat-messages,.rex-chat-composer,.rex-interview > footer { padding-right: 14px; padding-left: 14px; } .rex-chat-composer { align-items: stretch; flex-direction: column; } .rex-chat-composer button { align-self: flex-end; } }
+
+/* NEXPLY's FlowCV-inspired resume content editor */
+.candidate-intro-actions { flex-wrap: wrap; justify-content: flex-end; }
+.candidate-rex-start { display: inline-flex; min-height: 38px; align-items: center; gap: 8px; padding: 0 13px; border: 1px solid #d8e4ed; border-radius: 9px; background: #fff; color: #50677a; font-size: 12px; font-weight: 650; cursor: pointer; }
+.candidate-rex-start:hover:not(:disabled) { border-color: #92cce3; background: #f2faff; color: #1680ad; }
+.candidate-rex-start:disabled { cursor: not-allowed; opacity: .55; }
+.resume-editor-overlay { background: #f2f5f8; color: #263d50; }
+.resume-editor-header { border-bottom-color: #e0e8ee; background: #fff; box-shadow: 0 2px 12px rgb(32 54 72 / 5%); }
+.resume-editor-mark { background: #258bb8; }
+.resume-editor-brand strong { color: #253b4e; font-family: inherit; }
+.resume-editor-button { border-color: #d5e1e9; background: #fff; color: #4d6477; }
+.resume-editor-button.primary { border-color: #238dbb; background: #238dbb; }
+.resume-editor-main { background: #f2f5f8; }
+.resume-editor-left { padding-top: 18px; background: #f2f5f8; }
+.resume-editor-intro .section-eyebrow,.resume-preview-heading .section-eyebrow { color: #2789b5; }
+.resume-editor-intro h1,.resume-preview-heading h2 { color: #263c50; font-family: inherit; }
+.resume-editor-nav { background: #f2f5f8; }
+.resume-editor-nav a { border-color: #d7e4ec; background: #fff; color: #5d7487; }
+.resume-editor-nav a:hover { border-color: #80c3df; background: #eaf7fc; color: #1e83ad; }
+.flow-section { margin: 0 0 13px; padding: 0; overflow: hidden; border: 1px solid #dce5eb; border-radius: 13px; background: #fff; box-shadow: 0 3px 12px rgb(29 60 80 / 4%); }
+.flow-section > summary { display: flex; min-height: 66px; align-items: center; padding: 13px 17px; list-style: none; cursor: pointer; }
+.flow-section > summary::-webkit-details-marker,.flow-entry > summary::-webkit-details-marker { display: none; }
+.flow-section > summary::after { content: "⌄"; margin-left: 8px; color: #526b7c; font-size: 18px; }
+.flow-section[open] > summary::after { content: "⌃"; }
+.flow-section .resume-edit-title { flex: 1; margin: 0; }
+.flow-section .resume-edit-title > span { background: #e9f5fb; color: #3989b3; }
+.flow-section .resume-edit-title h2 { color: #293e52; font-family: inherit; font-size: 18px; }
+.flow-section .resume-edit-title i { background: #e2eaf0; }
+.flow-section-count { display: grid; min-width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #eef7fb; color: #4288a9; font-size: 10px; font-weight: 750; }
+.flow-section > .resume-edit-grid,.flow-section > .resume-list-editor,.flow-section > .resume-entry-editor,.flow-section > .resume-collection-actions { margin-right: 17px; margin-left: 17px; }
+.flow-section > .resume-edit-grid,.flow-section > .resume-list-editor { padding-bottom: 18px; }
+.flow-section > .resume-entry-editor { margin-bottom: 10px; }
+.flow-section > .resume-collection-actions { display: flex; flex-wrap: wrap; gap: 9px; padding: 3px 0 17px; }
+.flow-entry { padding: 0; overflow: hidden; border-color: #e1e8ee; border-radius: 10px; background: #fff; }
+.flow-entry > summary { display: flex; min-height: 62px; align-items: center; gap: 11px; padding: 10px 12px; list-style: none; cursor: pointer; }
+.flow-entry > summary::after { content: "⌄"; color: #728494; font-size: 16px; }
+.flow-entry[open] > summary::after { content: "⌃"; }
+.flow-entry .resume-entry-grip { background: #edf6fb; color: #4a8eb3; }
+.flow-entry-title { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.flow-entry-title strong { overflow: hidden; color: #31495e; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.flow-entry-title small { overflow: hidden; color: #8394a1; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }

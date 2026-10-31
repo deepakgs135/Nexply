@@ -63,12 +63,20 @@ def upsert_candidate_profile(
                    updated_at = NOW()""",
             values,
         )
-def get_candidate_profile_source_document_id(app_id: str, connect) -> str | None:
-    """Return the Mongo source id currently mirrored for this account."""
+def get_candidate_profile(app_id: str, connect) -> dict | None:
+    """
+    Fetch the structured candidate profile belonging to one authenticated user.
+    """
+    
     with connect() as connection:
         row = connection.execute(
-            "SELECT source_document_id FROM public.candidate_profiles WHERE app_id = %s::uuid",
+            """
+            SELECT *
+            FROM public.candidate_profiles
+            WHERE app_id = %s::uuid
+            """,
             (app_id,),
         ).fetchone()
-    return row["source_document_id"] if row else None
+        
+    return dict(row) if row else None
 

@@ -62,3 +62,9 @@ def set_reset_token_for_code(email: str, code_hash: str, token_hash: str, now, t
 def replace_password_with_reset_token(email: str, token_hash: str, password_hash: str, now) -> bool:
     return postgres_password_recovery.replace_password_with_reset_token(email, token_hash, password_hash, now, connect=_connect)
 
+@debug_trace
+def get_candidate_profile(app_id: str) -> dict | None:
+    return postgres_profiles.get_candidate_profile(
+        app_id,
+        connect=_connect,
+    )

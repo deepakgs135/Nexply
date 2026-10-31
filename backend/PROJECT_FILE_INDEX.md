@@ -4,7 +4,7 @@ This is the maintained file-by-file guide to the NEXPLY repository. Each first-p
 
 ## Inventory scope and maintenance
 
-- Includes project source, tests, documentation, configuration, lockfiles, the local `.env` filename, and the two root-level local artifacts.
+- Includes project source, tests, documentation, configuration, lockfiles, the local `.env` filename, and root-level local artifacts.
 - Excludes generated/dependency trees: `.git`, `.venv`, `venv`, `node_modules`, `.pytest_cache`, `__pycache__`, `dist`, `build`, `.mypy_cache`, and `.ruff_cache`. These contain generated files rather than maintained project source.
 - `.env` is intentionally listed by name only. Never copy its contents or secrets into this document.
 - After changing the tree, update this index and run `python scripts/verify_file_index.py`. The checker detects missing or stale file entries; review descriptions manually when a file's purpose changes.
@@ -14,16 +14,19 @@ This is the maintained file-by-file guide to the NEXPLY repository. Each first-p
 | File | Purpose |
 |---|---|
 | `.env` | Local, ignored runtime configuration for secrets and machine-specific settings. Its values are not documented here. |
-| `.env.example` | Safe template showing the environment variables required to configure the API and its dependencies. |
+| `.env.example` | Environment-variable template for the API and its dependencies; keep credentials as placeholders and never copy real secrets into it. |
 | `requirements.txt` | Python runtime and development dependencies installed into the backend environment. |
 | `run.py` | Convenience entry point for starting the FastAPI application from the source tree. |
 | `CORE_TEST_REPORT.md` | Recorded results and notes from the backend's core verification pass. |
 | `ENDPOINT_TRACKER.md` | Endpoint inventory and implementation/testing status tracker. |
 | `PROJECT_FILE_INDEX.md` | This maintained, grouped purpose reference for every in-scope file. |
 | `resume_from_mongodb.pdf` | Local PDF artifact used for resume extraction or preview work; not application source. |
-| `src.zip` | Local source archive artifact; not used as the live Python package. |
 | `docs/AUTHENTICATION_SETUP.md` | Setup guide for PostgreSQL authentication, schema prerequisites, and local auth configuration. |
+| `docs/retrieval_evaluation/PHASE_5_REPORT.md` | Phase 5 retrieval evaluation findings, preliminary baseline, methodology caveats, decisions, and remaining acceptance work. |
+| `docs/retrieval_evaluation/reports/retrieval_baseline.json` | Machine-readable live baseline metrics; candidate identifiers and profile text are excluded. |
+| `docs/retrieval_evaluation/reports/retrieval_baseline.md` | Human-readable live baseline summary by score threshold and query category. |
 | `scripts/verify_file_index.py` | Checks that every in-scope file is represented in this index and flags stale entries. |
+| `scripts/update_file_flow_map.py` | Rebuilds the direct-import connection map below from current Python, TypeScript, and CSS imports. |
 
 ## Backend: application startup and HTTP API
 
@@ -241,3 +244,246 @@ This is the maintained file-by-file guide to the NEXPLY repository. Each first-p
 | `tests/test_parser_and_schema_validation.py` | Tests parser output and structured resume schema validation. |
 | `tests/test_job_parser.py` | Covers job-description parsing and normalized requirement extraction. |
 | `tests/test_api_health_and_static_assets.py` | Checks health endpoint and frontend/static asset serving behavior. |
+
+## Tests: candidate memory retrieval evaluation
+
+| File | Purpose |
+|---|---|
+| `tests/retrieval_evaluation/README.md` | Documents dataset generation, live-run setup, metrics, privacy constraints, and the preliminary annotation limitation. |
+| `tests/retrieval_evaluation/test_queries.json` | Candidate-local evaluation questions and memory-ID relevance labels; excludes app ID and memory text. Current labels are section-wide and preliminary. |
+| `tests/retrieval_evaluation/query_catalog.py` | Defines the human-authored query set, categories, expected classifier intent/sections, and rationale. |
+| `tests/retrieval_evaluation/dataset.py` | Builds and validates query annotation records and required category coverage. |
+| `tests/retrieval_evaluation/build_local_dataset.py` | Binds the catalog to current candidate-owned Qdrant memory IDs without reading payload text. |
+| `tests/retrieval_evaluation/scope_validation.py` | Verifies each expected memory ID belongs to the selected app ID and is a memory node. |
+| `tests/retrieval_evaluation/metrics.py` | Implements Precision@K, Recall@K, MRR, and Hit Rate with duplicate and empty-result handling. |
+| `tests/retrieval_evaluation/evaluation_runner.py` | Executes injected classifier/retriever functions and aggregates overall/category results and latency. |
+| `tests/retrieval_evaluation/report_writer.py` | Writes privacy-minimized JSON and Markdown evaluation reports. |
+| `tests/retrieval_evaluation/evaluate_retrieval.py` | CLI entry point for live classifier/retriever evaluation with candidate-owner validation. |
+| `tests/retrieval_evaluation/test_evaluation_metrics.py` | Unit tests for ranking metrics, edge cases, and multiple cutoffs. |
+| `tests/retrieval_evaluation/test_dataset_annotations.py` | Tests catalog binding and dataset field/category validation. |
+| `tests/retrieval_evaluation/test_evaluation_runner.py` | Tests aggregation and runner outcomes with mocked classifier and retriever. |
+| `tests/retrieval_evaluation/test_candidate_intent_classifier.py` | Tests Qwen classifier validation, regex fallback, section mappings, and invalid inputs. |
+| `tests/retrieval_evaluation/test_candidate_retriever.py` | Tests candidate scoping, memory-node filtering, explicit sections, and threshold forwarding. |
+| `tests/retrieval_evaluation/test_scope_validation.py` | Tests rejection of missing, non-memory, or cross-candidate relevance labels. |
+| `tests/retrieval_evaluation/test_report_writer.py` | Tests generated report structure and privacy-safe output. |
+| `tests/retrieval_evaluation/test_live_retrieval.py` | Optional environment-gated smoke test for local embedding and Qdrant retrieval. |
+| `tests/retrieval_evaluation/__init__.py` | Marks the retrieval evaluation helpers as an importable Python package. |
+| `tests/__init__.py` | Marks the test tree as an importable Python package for module-based evaluation commands. |
+
+## End-to-end file flows
+
+The arrows below follow the application from its entry point through the browser, API, service layer, and persistence. The generated map in the next section lists direct local imports per implementation file; the sequences here add runtime order and the work each layer performs.
+
+### Candidate semantic memory and retrieval evaluation
+
+Profile data enters `candidate_memory_builder.py` → `candidate_memory_tree.py` to produce candidate-root, section, and memory nodes; `candidate_memory_indexer.py` embeds and upserts those nodes using `embedding_service.py` into the existing Qdrant collection. At query time, `candidate_llm_intent_classifier.py` uses Qwen and falls back to `candidate_query_classifier.py`; `candidate_memory_retriever.py` embeds the question and filters Qdrant by authenticated `app_id`, `node_type=memory`, and (when specific) the validated `source_section`. The Phase 5 evaluation path is `query_catalog.py` → `build_local_dataset.py` / `dataset.py` → `scope_validation.py` → `evaluate_retrieval.py` → `evaluation_runner.py` → `metrics.py` → `report_writer.py`. The runner invokes the live classifier and retriever; mocked unit tests exercise it without local services. Reports under `docs/retrieval_evaluation/reports/` contain aggregate results and opaque point IDs only. The current dataset labels are section-wide, so the report is explicitly preliminary pending manual fact-level annotation.
+
+### Browser startup and authenticated profile workspace
+
+`frontend/index.html` loads `frontend/src/main.tsx` → `frontend/src/App.tsx` → `frontend/src/app/AppRouter.tsx`. The router checks the session through `frontend/src/shared/api.ts`, then renders `frontend/src/Auth.tsx` / `frontend/src/AuthView.tsx` for unauthenticated visitors or `frontend/src/app/AppLayout.tsx` with `frontend/src/pages/ProfilePage.tsx` for signed-in users. `ProfilePage.tsx` composes `ProfileWorkspacePanels.tsx`, `ResumeSourceCard.tsx`, `ProfilePreferences.tsx`, and the `use*` hooks. Those hooks call `shared/api.ts`; app styles enter at `frontend/src/main.tsx` and `frontend/src/styles.css`.
+
+### Registration, sign-in, and password recovery
+
+The browser auth form in `AuthView.tsx` collects data and `Auth.tsx` sends it through `shared/api.ts` to `src/nexus/api/auth.py`. The API validates inputs, hashes passwords, and uses `src/nexus/storage/postgres.py` plus the focused account and password-recovery adapters. Signed bearer tokens identify the account; protected routes call `get_current_user` and use the PostgreSQL account's `app_id` as the owner key. Password recovery additionally uses SMTP settings from `src/nexus/core/config.py` and single-use OTP/reset-token storage in PostgreSQL.
+
+### Resume upload, extraction, and profile display
+
+`ResumeSourceCard.tsx` → `useResumeFile.ts` → `useResumeExtraction.ts` → `shared/api.ts` → `routes/resume/upload.py` → `storage/mongodb.py` → `mongodb_upload.py` / `mongodb_runtime.py`. The original file is placed in GridFS and owner-scoped resume metadata is written to MongoDB. Parsing then flows through `routes/resume/parse.py` → `services/resume_service.py` → `core/parser.py` → `resume_repository.py`; extracted source text is saved on the same resume record. Structured extraction flows through `routes/resume/extract.py` → `resume_service.py` → `core/resume_extractor.py` → `resume_extraction_ollama.py` → prompt, normalization, and schema modules. The validated JSON updates MongoDB and is synchronized to PostgreSQL by `postgres_profiles.py`. `useProfileRecord.ts` loads the latest profile and `ResumeEditor.tsx` / `ResumePreview.tsx` render and edit it.
+
+### Manual profile creation and REX features
+
+`RexManualProfile.tsx` sends the conversation to `routes/resume/ai.py` → `services/resume_writer.py` → `resume_interview.py` and shared Ollama/prompt helpers. Saving the completed profile uses the manual-profile route, validates it with `schemas/resume.py`, creates a DOCX through `resume_export.py` and the `resume_docx_*` modules, stores the original in GridFS, and writes the structured profile to MongoDB and PostgreSQL. Field rewrites and generated drafts use `resume_rewrite.py` and `resume_generation.py`; `RexResumeBuilder.tsx` can request DOCX export without creating another resume record.
+
+### Manual edits and job preferences
+
+`ResumeEditor.tsx` and `ProfilePreferences.tsx` use `useProfileEditor.ts` and `useJobPreferences.ts` to submit changes. Structured edits update the existing MongoDB record through `routes/resume/history.py` and `resume_repository.py`, then synchronize the one-row-per-app-ID profile mirror through `resume_service.py` and `postgres_profiles.py`. Preferences use the same history route and `postgres_preferences.py`; MongoDB does not store job preferences.
+
+### Job-description processing and deletion
+
+Job-description endpoints in `routes/jds.py` pass through `jd_service.py`, `jd_extractor.py` / `nlp/job_parser.py`, `jd_repository.py`, and the configured MongoDB `jd` collection. Resume deletion passes from the profile UI to `routes/resume/history.py`, then `resume_service.py` deletes the owner-scoped MongoDB document and associated GridFS originals. The Mongo health endpoint checks MongoDB connectivity only; it does not imply that PostgreSQL, Ollama, or an external vector database is healthy.
+
+## Direct file-level import connections
+
+This table is generated from local imports (not inferred from filenames). It shows the direct implementation files each code file depends on; the flows above explain call order across those layers. Files with no local imports are still listed and described above. Configuration, documentation, and binary artifacts are not runtime-imported code.
+
+<!-- BEGIN GENERATED FILE FLOW MAP -->
+
+| File | Direct project file connections |
+|---|---|
+| `frontend/src/app/AppLayout.tsx` | `frontend/src/app/types.ts` |
+| `frontend/src/app/AppRouter.tsx` | `frontend/src/app/AppLayout.tsx`, `frontend/src/app/types.ts`, `frontend/src/Auth.tsx`, `frontend/src/pages/ProfilePage.tsx`, `frontend/src/shared/api.ts` |
+| `frontend/src/app/types.ts` | No direct local imports; see its role above. |
+| `frontend/src/App.tsx` | `frontend/src/app/AppRouter.tsx` |
+| `frontend/src/Auth.tsx` | `frontend/src/authTypes.ts`, `frontend/src/AuthView.tsx` |
+| `frontend/src/authTypes.ts` | No direct local imports; see its role above. |
+| `frontend/src/AuthView.tsx` | `frontend/src/authTypes.ts` |
+| `frontend/src/components/ResumeEditor.tsx` | `frontend/src/components/resumeEditorActions.ts`, `frontend/src/components/ResumeEditorFields.tsx`, `frontend/src/components/ResumePreview.tsx`, `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/resumeEditorActions.ts` | `frontend/src/components/ResumeEditorFields.tsx`, `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/ResumeEditorFields.tsx` | `frontend/src/components/RichTextEditor.tsx`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/ResumePreview.tsx` | `frontend/src/components/RichTextEditor.tsx`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/RexManualProfile.tsx` | `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/RexResumeBuilder.tsx` | `frontend/src/components/ResumeEditor.tsx`, `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/RichTextContent.tsx` | `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/components/RichTextEditor.tsx` | `frontend/src/components/RichTextContent.tsx`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/main.tsx` | `frontend/src/app.tsx`, `frontend/src/styles.css` |
+| `frontend/src/pages/profile-preferences-model.ts` | No direct local imports; see its role above. |
+| `frontend/src/pages/ProfilePage.tsx` | `frontend/src/pages/ProfilePreferences.tsx`, `frontend/src/pages/ProfileWorkspacePanels.tsx`, `frontend/src/pages/ResumeSourceCard.tsx`, `frontend/src/pages/useApiAvailability.ts`, `frontend/src/pages/useJobPreferences.ts`, `frontend/src/pages/useProfileEditor.ts`, `frontend/src/pages/useProfileRecord.ts`, `frontend/src/pages/useResumeExtraction.ts`, `frontend/src/pages/useResumeFile.ts` |
+| `frontend/src/pages/ProfilePreferences.tsx` | `frontend/src/pages/profile-preferences-model.ts` |
+| `frontend/src/pages/ProfileWorkspacePanels.tsx` | `frontend/src/components/ResumeEditor.tsx`, `frontend/src/components/RexResumeBuilder.tsx`, `frontend/src/pages/useProfileEditor.ts`, `frontend/src/pages/useProfileRecord.ts`, `frontend/src/pages/useResumeFile.ts` |
+| `frontend/src/pages/profileWorkspaceTypes.ts` | `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/pages/ResumeSourceCard.tsx` | `frontend/src/pages/profileWorkspaceTypes.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/pages/useApiAvailability.ts` | `frontend/src/shared/api.ts` |
+| `frontend/src/pages/useJobPreferences.ts` | `frontend/src/pages/profile-preferences-model.ts`, `frontend/src/shared/api.ts` |
+| `frontend/src/pages/useProfileEditor.ts` | `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/pages/useProfileRecord.ts` | `frontend/src/pages/profileWorkspaceTypes.ts`, `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/pages/useResumeExtraction.ts` | `frontend/src/pages/profileWorkspaceTypes.ts`, `frontend/src/shared/api.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/pages/useResumeFile.ts` | `frontend/src/pages/profileWorkspaceTypes.ts`, `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/shared/api.ts` | No direct local imports; see its role above. |
+| `frontend/src/shared/ResumeDetailRows.tsx` | `frontend/src/shared/resumeFormat.tsx` |
+| `frontend/src/shared/resumeFormat.tsx` | No direct local imports; see its role above. |
+| `frontend/src/styles/ai-tools-and-progress.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/app-shell-and-navigation.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/authentication-controls.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/authentication-layout.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/design-tokens-and-rex-chat.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/history-profile.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/manual-profile-builder.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/profile-editor-toolbar.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/profile-workspace.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/resume-entry-editor.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/resume-preview.css` | No direct local imports; see its role above. |
+| `frontend/src/styles/resume-upload-workspace.css` | No direct local imports; see its role above. |
+| `frontend/src/styles.css` | `frontend/src/styles/ai-tools-and-progress.css`, `frontend/src/styles/app-shell-and-navigation.css`, `frontend/src/styles/authentication-controls.css`, `frontend/src/styles/authentication-layout.css`, `frontend/src/styles/design-tokens-and-rex-chat.css`, `frontend/src/styles/history-profile.css`, `frontend/src/styles/manual-profile-builder.css`, `frontend/src/styles/profile-editor-toolbar.css`, `frontend/src/styles/profile-workspace.css`, `frontend/src/styles/resume-entry-editor.css`, `frontend/src/styles/resume-preview.css`, `frontend/src/styles/resume-upload-workspace.css` |
+| `frontend/src/vite-env.d.ts` | No direct local imports; see its role above. |
+| `scripts/inspect_candidate_memory.py` | `src/nexus/services/candidate_memory_builder.py`, `src/nexus/storage/postgres.py` |
+| `scripts/update_file_flow_map.py` | No direct local imports; see its role above. |
+| `scripts/verify_file_index.py` | No direct local imports; see its role above. |
+| `src/nexus/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/api/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/api/auth.py` | `src/nexus/core/config.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/postgres.py` |
+| `src/nexus/api/main.py` | `src/nexus/api/auth.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py`, `src/nexus/core/config.py`, `src/nexus/core/debug.py` |
+| `src/nexus/api/routes/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/api/routes/health.py` | `src/nexus/core/debug.py`, `src/nexus/storage/mongodb.py` |
+| `src/nexus/api/routes/jds.py` | No direct local imports; see its role above. |
+| `src/nexus/api/routes/resume/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/api/routes/resume/ai.py` | `src/nexus/api/auth.py`, `src/nexus/core/config.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/resume_export.py`, `src/nexus/services/resume_service.py`, `src/nexus/services/resume_writer.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/resume_repository.py` |
+| `src/nexus/api/routes/resume/extract.py` | `src/nexus/api/auth.py`, `src/nexus/core/debug.py`, `src/nexus/services/resume_service.py` |
+| `src/nexus/api/routes/resume/get.py` | `src/nexus/api/auth.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/services/resume_service.py` |
+| `src/nexus/api/routes/resume/history.py` | `src/nexus/api/auth.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `src/nexus/api/routes/resume/parse.py` | `src/nexus/api/auth.py`, `src/nexus/core/debug.py`, `src/nexus/services/resume_service.py` |
+| `src/nexus/api/routes/resume/upload.py` | `src/nexus/api/auth.py`, `src/nexus/core/config.py`, `src/nexus/core/debug.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/mongodb.py` |
+| `src/nexus/api/routes/resumes.py` | `src/nexus/api/auth.py`, `src/nexus/core/debug.py`, `src/nexus/core/parser.py`, `src/nexus/storage/mongodb.py` |
+| `src/nexus/core/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/core/config.py` | No direct local imports; see its role above. |
+| `src/nexus/core/debug.py` | No direct local imports; see its role above. |
+| `src/nexus/core/jd_extractor.py` | No direct local imports; see its role above. |
+| `src/nexus/core/parser.py` | `src/nexus/core/debug.py` |
+| `src/nexus/core/prompts/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/core/prompts/resume_extraction.py` | No direct local imports; see its role above. |
+| `src/nexus/core/prompts/resume_writing.py` | No direct local imports; see its role above. |
+| `src/nexus/core/resume_extraction_ollama.py` | `src/nexus/core/config.py`, `src/nexus/core/debug.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_normalization.py`, `src/nexus/core/resume_source_contact.py`, `src/nexus/core/resume_source_experience.py`, `src/nexus/core/resume_source_links.py`, `src/nexus/core/schemas/resume.py` |
+| `src/nexus/core/resume_extractor.py` | `src/nexus/core/resume_extraction_ollama.py`, `src/nexus/core/resume_normalization.py`, `src/nexus/core/resume_source_contact.py`, `src/nexus/core/resume_source_experience.py`, `src/nexus/core/resume_source_links.py` |
+| `src/nexus/core/resume_normalization.py` | `src/nexus/core/resume_normalize_education.py`, `src/nexus/core/resume_normalize_projects.py`, `src/nexus/core/resume_normalize_root.py`, `src/nexus/core/resume_normalize_sections.py` |
+| `src/nexus/core/resume_normalize_common.py` | No direct local imports; see its role above. |
+| `src/nexus/core/resume_normalize_education.py` | `src/nexus/core/resume_normalize_common.py` |
+| `src/nexus/core/resume_normalize_projects.py` | `src/nexus/core/resume_normalize_common.py` |
+| `src/nexus/core/resume_normalize_root.py` | `src/nexus/core/resume_normalize_common.py` |
+| `src/nexus/core/resume_normalize_sections.py` | `src/nexus/core/resume_normalize_common.py`, `src/nexus/core/schemas/resume.py` |
+| `src/nexus/core/resume_source_contact.py` | No direct local imports; see its role above. |
+| `src/nexus/core/resume_source_experience.py` | `src/nexus/core/debug.py` |
+| `src/nexus/core/resume_source_links.py` | `src/nexus/core/debug.py` |
+| `src/nexus/core/schemas/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/core/schemas/resume.py` | No direct local imports; see its role above. |
+| `src/nexus/nlp/job_parser.py` | `src/nexus/core/debug.py` |
+| `src/nexus/services/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/services/candidate_llm_intent_classifier.py` | `src/nexus/services/candidate_query_classifier.py` |
+| `src/nexus/services/candidate_memory_builder.py` | No direct local imports; see its role above. |
+| `src/nexus/services/candidate_memory_indexer.py` | `src/nexus/services/embedding_service.py` |
+| `src/nexus/services/candidate_memory_retriever.py` | `src/nexus/services/candidate_llm_intent_classifier.py`, `src/nexus/services/embedding_service.py` |
+| `src/nexus/services/candidate_memory_tree.py` | `src/nexus/services/candidate_memory_builder.py` |
+| `src/nexus/services/candidate_query_classifier.py` | No direct local imports; see its role above. |
+| `src/nexus/services/embedding_service.py` | No direct local imports; see its role above. |
+| `src/nexus/services/jd_service.py` | `src/nexus/core/debug.py`, `src/nexus/storage/jd_repository.py` |
+| `src/nexus/services/resume_docx_additional.py` | `src/nexus/services/resume_docx_components.py` |
+| `src/nexus/services/resume_docx_builder.py` | `src/nexus/core/debug.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/resume_docx_additional.py`, `src/nexus/services/resume_docx_header.py`, `src/nexus/services/resume_docx_projects.py`, `src/nexus/services/resume_docx_sections.py` |
+| `src/nexus/services/resume_docx_components.py` | `src/nexus/services/resume_docx_text.py` |
+| `src/nexus/services/resume_docx_header.py` | `src/nexus/services/resume_docx_components.py` |
+| `src/nexus/services/resume_docx_projects.py` | `src/nexus/services/resume_docx_components.py` |
+| `src/nexus/services/resume_docx_sections.py` | `src/nexus/services/resume_docx_components.py` |
+| `src/nexus/services/resume_docx_text.py` | No direct local imports; see its role above. |
+| `src/nexus/services/resume_export.py` | `src/nexus/services/resume_docx_builder.py` |
+| `src/nexus/services/resume_generation.py` | `src/nexus/services/resume_model_catalog.py`, `src/nexus/services/resume_writer_common.py` |
+| `src/nexus/services/resume_interview.py` | `src/nexus/services/resume_model_catalog.py`, `src/nexus/services/resume_writer_common.py` |
+| `src/nexus/services/resume_model_catalog.py` | `src/nexus/services/resume_writer_common.py` |
+| `src/nexus/services/resume_rewrite.py` | `src/nexus/services/resume_model_catalog.py`, `src/nexus/services/resume_writer_common.py` |
+| `src/nexus/services/resume_service.py` | `src/nexus/core/debug.py`, `src/nexus/core/parser.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `src/nexus/services/resume_writer.py` | `src/nexus/services/resume_generation.py`, `src/nexus/services/resume_interview.py`, `src/nexus/services/resume_model_catalog.py`, `src/nexus/services/resume_rewrite.py` |
+| `src/nexus/services/resume_writer_common.py` | `src/nexus/core/config.py`, `src/nexus/core/debug.py`, `src/nexus/core/prompts/resume_writing.py`, `src/nexus/core/schemas/resume.py` |
+| `src/nexus/storage/__init__.py` | No direct local imports; see its role above. |
+| `src/nexus/storage/jd_repository.py` | `src/nexus/core/debug.py`, `src/nexus/storage/mongodb.py` |
+| `src/nexus/storage/mongodb.py` | `src/nexus/core/debug.py`, `src/nexus/storage/mongodb_runtime.py`, `src/nexus/storage/mongodb_upload.py` |
+| `src/nexus/storage/mongodb_runtime.py` | `src/nexus/core/config.py`, `src/nexus/core/debug.py` |
+| `src/nexus/storage/mongodb_upload.py` | `src/nexus/core/debug.py`, `src/nexus/storage/mongodb_runtime.py` |
+| `src/nexus/storage/parser.py` | `src/nexus/core/debug.py`, `src/nexus/services/resume_service.py` |
+| `src/nexus/storage/postgres.py` | `src/nexus/core/config.py`, `src/nexus/core/debug.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/postgres_accounts.py`, `src/nexus/storage/postgres_password_recovery.py`, `src/nexus/storage/postgres_preferences.py`, `src/nexus/storage/postgres_profiles.py` |
+| `src/nexus/storage/postgres_accounts.py` | No direct local imports; see its role above. |
+| `src/nexus/storage/postgres_password_recovery.py` | No direct local imports; see its role above. |
+| `src/nexus/storage/postgres_preferences.py` | No direct local imports; see its role above. |
+| `src/nexus/storage/postgres_profiles.py` | No direct local imports; see its role above. |
+| `src/nexus/storage/resume_repository.py` | `src/nexus/core/debug.py`, `src/nexus/storage/mongodb.py` |
+| `tests/__init__.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/__init__.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/build_local_dataset.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/dataset.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/evaluate_retrieval.py` | `src/nexus/services/__init__.py`, `src/nexus/services/candidate_llm_intent_classifier.py`, `src/nexus/services/candidate_memory_retriever.py` |
+| `tests/retrieval_evaluation/evaluation_runner.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/metrics.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/query_catalog.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/report_writer.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/scope_validation.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/test_candidate_intent_classifier.py` | `src/nexus/services/__init__.py`, `src/nexus/services/candidate_llm_intent_classifier.py`, `src/nexus/services/candidate_query_classifier.py` |
+| `tests/retrieval_evaluation/test_candidate_retriever.py` | `src/nexus/services/__init__.py`, `src/nexus/services/candidate_memory_retriever.py` |
+| `tests/retrieval_evaluation/test_dataset_annotations.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/test_evaluation_metrics.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/test_evaluation_runner.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/test_live_retrieval.py` | `src/nexus/services/candidate_memory_retriever.py`, `src/nexus/services/embedding_service.py` |
+| `tests/retrieval_evaluation/test_report_writer.py` | No direct local imports; see its role above. |
+| `tests/retrieval_evaluation/test_scope_validation.py` | No direct local imports; see its role above. |
+| `tests/test_account_registration.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_api_health_and_static_assets.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_concurrent_upload_idempotency.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_document_text_extraction.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_education_legacy_aliases.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_job_parser.py` | `src/nexus/nlp/job_parser.py` |
+| `tests/test_job_preferences_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_latest_profile_normalization_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_login_and_session.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_login_and_signing.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_manual_profile_save_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_ollama_response_validation.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_parser_and_schema_validation.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_postgres_profile_upserts.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_profile_alias_normalization.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_profile_owner_access_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_profile_schema_and_sql_sync.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_profile_validation_and_ai_smart_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_registration_validation.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_resume_and_jd_owner_fields.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_resume_api_docs.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_resume_delete_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_resume_export_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_resume_gridfs_cleanup.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_resume_link_and_ollama_request.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_resume_parse_and_extract_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_resume_repository_ownership.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_resume_retrieval_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_resume_source_recovery.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
+| `tests/test_resume_upload_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_rex_rewrite_and_interview_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_route_authentication_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_structured_profile_update_api.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_token_and_owner_scoping.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_upload_idempotency.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+| `tests/test_upload_owner_metadata.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
+
+<!-- END GENERATED FILE FLOW MAP -->

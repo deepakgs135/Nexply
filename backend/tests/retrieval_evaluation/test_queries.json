@@ -1,0 +1,1188 @@
+{
+  "dataset_version": 1,
+  "queries": [
+    {
+      "query_id": "skills-01",
+      "query": "List every technical skill recorded for this candidate.",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests the full skills inventory."
+    },
+    {
+      "query_id": "skills-02",
+      "query": "What technologies and tools are included in the profile?",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests all listed technologies and tools."
+    },
+    {
+      "query_id": "skills-03",
+      "query": "Summarize the candidate's complete skills list.",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests every skill entry."
+    },
+    {
+      "query_id": "skills-04",
+      "query": "Which technical abilities does the candidate document?",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests all documented technical abilities."
+    },
+    {
+      "query_id": "skills-05",
+      "query": "Give me the full programming and technical skills inventory.",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests the complete technical inventory."
+    },
+    {
+      "query_id": "skills-06",
+      "query": "What areas of technical proficiency are listed?",
+      "category": "technical_skills",
+      "expected_intent": "SKILL_SEARCH",
+      "expected_source_sections": [
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests all proficiency and skill entries."
+    },
+    {
+      "query_id": "projects-01",
+      "query": "List every project in the candidate's profile.",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests all project memories."
+    },
+    {
+      "query_id": "projects-02",
+      "query": "What portfolio projects are documented?",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Portfolio is used as a project synonym."
+    },
+    {
+      "query_id": "projects-03",
+      "query": "Summarize all of the candidate's project work.",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests every project entry."
+    },
+    {
+      "query_id": "projects-04",
+      "query": "Which projects and prototypes appear in the profile?",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests the complete set of project memories."
+    },
+    {
+      "query_id": "projects-05",
+      "query": "Tell me about all independent or portfolio work listed.",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests all listed project work."
+    },
+    {
+      "query_id": "projects-06",
+      "query": "What has the candidate built, according to the project section?",
+      "category": "projects",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Explicitly asks for all project-section evidence."
+    },
+    {
+      "query_id": "experience-01",
+      "query": "List all work experience entries.",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests every work-history memory."
+    },
+    {
+      "query_id": "experience-02",
+      "query": "Summarize the candidate's complete employment history.",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests all employment entries."
+    },
+    {
+      "query_id": "experience-03",
+      "query": "What professional experience is recorded in the profile?",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests all professional experience memories."
+    },
+    {
+      "query_id": "experience-04",
+      "query": "Outline every role, employer, and responsibility listed.",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests the complete work-history record."
+    },
+    {
+      "query_id": "experience-05",
+      "query": "Which jobs and career roles are documented?",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests all job and role entries."
+    },
+    {
+      "query_id": "experience-06",
+      "query": "Give me the full work-history timeline from the resume.",
+      "category": "work_experience",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests all experience records and dates."
+    },
+    {
+      "query_id": "education-01",
+      "query": "List every education entry in the profile.",
+      "category": "education",
+      "expected_intent": "EDUCATION_SEARCH",
+      "expected_source_sections": [
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433"
+      ],
+      "relevance_note": "Requests all education memories."
+    },
+    {
+      "query_id": "education-02",
+      "query": "Summarize the candidate's complete academic background.",
+      "category": "education",
+      "expected_intent": "EDUCATION_SEARCH",
+      "expected_source_sections": [
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433"
+      ],
+      "relevance_note": "Requests all academic records."
+    },
+    {
+      "query_id": "education-03",
+      "query": "What degrees, institutions, and study history are documented?",
+      "category": "education",
+      "expected_intent": "EDUCATION_SEARCH",
+      "expected_source_sections": [
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433"
+      ],
+      "relevance_note": "Requests all education details."
+    },
+    {
+      "query_id": "education-04",
+      "query": "Where and when did the candidate study, according to the profile?",
+      "category": "education",
+      "expected_intent": "EDUCATION_SEARCH",
+      "expected_source_sections": [
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433"
+      ],
+      "relevance_note": "Requests all education entries and dates."
+    },
+    {
+      "query_id": "certs-01",
+      "query": "List all certifications recorded for the candidate.",
+      "category": "certifications",
+      "expected_intent": "CERTIFICATION_SEARCH",
+      "expected_source_sections": [
+        "certifications"
+      ],
+      "relevant_memory_ids": [
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d"
+      ],
+      "relevance_note": "Requests every certification memory."
+    },
+    {
+      "query_id": "certs-02",
+      "query": "Which certificates and credentials are documented?",
+      "category": "certifications",
+      "expected_intent": "CERTIFICATION_SEARCH",
+      "expected_source_sections": [
+        "certifications"
+      ],
+      "relevant_memory_ids": [
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d"
+      ],
+      "relevance_note": "Requests all certificate records."
+    },
+    {
+      "query_id": "certs-03",
+      "query": "Summarize the candidate's complete certification list.",
+      "category": "certifications",
+      "expected_intent": "CERTIFICATION_SEARCH",
+      "expected_source_sections": [
+        "certifications"
+      ],
+      "relevant_memory_ids": [
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d"
+      ],
+      "relevance_note": "Requests every certification entry."
+    },
+    {
+      "query_id": "certs-04",
+      "query": "What formal certificates does this profile mention?",
+      "category": "certifications",
+      "expected_intent": "CERTIFICATION_SEARCH",
+      "expected_source_sections": [
+        "certifications"
+      ],
+      "relevant_memory_ids": [
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d"
+      ],
+      "relevance_note": "Requests all formal certificate memories."
+    },
+    {
+      "query_id": "general-01",
+      "query": "Give me a complete overview of the candidate's profile.",
+      "category": "general_profile",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "professional_summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "certifications",
+        "awards",
+        "publications",
+        "additional_sections"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "5c232cce-4fc5-5d66-ad8c-62abf33f597f",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7911ffa6-fdbf-596d-86f2-121c5625e748",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "bd4f9c10-9a38-5237-8315-b843f3c5108d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56",
+        "f77812c9-936a-5cf7-a187-415799c97575",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests an overview across every available profile section."
+    },
+    {
+      "query_id": "general-02",
+      "query": "What information is recorded across the full candidate profile?",
+      "category": "general_profile",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "professional_summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "certifications",
+        "awards",
+        "publications",
+        "additional_sections"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "5c232cce-4fc5-5d66-ad8c-62abf33f597f",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7911ffa6-fdbf-596d-86f2-121c5625e748",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "bd4f9c10-9a38-5237-8315-b843f3c5108d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56",
+        "f77812c9-936a-5cf7-a187-415799c97575",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests all profile sections rather than one category."
+    },
+    {
+      "query_id": "general-03",
+      "query": "Describe the candidate's overall professional background and qualifications.",
+      "category": "general_profile",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "professional_summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "certifications",
+        "awards",
+        "publications",
+        "additional_sections"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "5c232cce-4fc5-5d66-ad8c-62abf33f597f",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7911ffa6-fdbf-596d-86f2-121c5625e748",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "bd4f9c10-9a38-5237-8315-b843f3c5108d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56",
+        "f77812c9-936a-5cf7-a187-415799c97575",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Broad question that should not apply a single-section filter."
+    },
+    {
+      "query_id": "general-04",
+      "query": "Summarize the full set of details available about this candidate.",
+      "category": "general_profile",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "professional_summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "certifications",
+        "awards",
+        "publications",
+        "additional_sections"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "5c232cce-4fc5-5d66-ad8c-62abf33f597f",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7911ffa6-fdbf-596d-86f2-121c5625e748",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "bd4f9c10-9a38-5237-8315-b843f3c5108d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56",
+        "f77812c9-936a-5cf7-a187-415799c97575",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests a full-profile summary."
+    },
+    {
+      "query_id": "general-05",
+      "query": "What does the profile say about the candidate overall?",
+      "category": "general_profile",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "professional_summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "certifications",
+        "awards",
+        "publications",
+        "additional_sections"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "5c232cce-4fc5-5d66-ad8c-62abf33f597f",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7911ffa6-fdbf-596d-86f2-121c5625e748",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "bd4f9c10-9a38-5237-8315-b843f3c5108d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56",
+        "f77812c9-936a-5cf7-a187-415799c97575",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "General candidate question across all sections."
+    },
+    {
+      "query_id": "multi-01",
+      "query": "Summarize all skills and all projects from this profile.",
+      "category": "multi_section",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "skills",
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Both requested sections are relevant; no single-section filter is correct."
+    },
+    {
+      "query_id": "multi-02",
+      "query": "Give me the candidate's complete work history and education.",
+      "category": "multi_section",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "experience",
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Requests all memories from experience and education."
+    },
+    {
+      "query_id": "multi-03",
+      "query": "What certifications and awards are documented?",
+      "category": "multi_section",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "certifications",
+        "awards"
+      ],
+      "relevant_memory_ids": [
+        "1be238c9-6d68-5996-a1b0-ed415374534d",
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "c87a2eed-2423-5c36-b10d-a77b9053da28",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d",
+        "f77812c9-936a-5cf7-a187-415799c97575"
+      ],
+      "relevance_note": "Requests two distinct profile sections."
+    },
+    {
+      "query_id": "multi-04",
+      "query": "List every project and publication in the profile.",
+      "category": "multi_section",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "projects",
+        "publications"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "fa85d373-d6b5-5594-b58e-3530f8a00844",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Requests all evidence from projects and publications."
+    },
+    {
+      "query_id": "multi-05",
+      "query": "Summarize education and technical skills together.",
+      "category": "multi_section",
+      "expected_intent": "GENERAL_SEARCH",
+      "expected_source_sections": [
+        "education",
+        "skills"
+      ],
+      "relevant_memory_ids": [
+        "02b399cd-9cc0-5467-b431-bdb66f0b7c2e",
+        "03834d34-0ad3-56d6-90e1-fa7fcbf06eb0",
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "0c2792d7-1ee6-50f6-b7ae-a4d3f0b8d797",
+        "16664836-1d21-51de-bda5-2236ff187b36",
+        "198db741-bf32-539a-a45d-0139020a4ca3",
+        "1c744a98-e2e4-57de-81b9-403a68011859",
+        "20f1761e-2913-504e-bdd4-e74a73f50563",
+        "232b7285-e767-51a2-b98f-6f58728f079c",
+        "3192682d-5811-5044-afa0-c6502027e66e",
+        "424937ff-75ff-596b-9833-4ce8b1934c9b",
+        "488c72ce-6513-51ef-a95d-c651584d7392",
+        "552096d0-bf45-560a-8846-3170aa90a767",
+        "57672dce-0e9d-5466-be7b-d0b1527b4dd5",
+        "6270e0fa-7a4f-5a94-926d-1de7f26ff51c",
+        "6818023a-4c49-59eb-b04b-29c94cd00af8",
+        "7272e2db-5c09-590c-8363-e2e87f82b376",
+        "7d9a670c-ce69-514c-a1d7-6e34b30e917a",
+        "821df4bf-1c2b-512f-bc5b-32bb80bebea4",
+        "82afc497-c562-5e31-9abf-79305c430f8c",
+        "82fe98e8-7090-5734-8ff7-cf1ca9f15eb1",
+        "885772db-d344-509b-ba80-de8f46ee64ed",
+        "8a5d6ebc-7d85-5d32-b372-7f226ad72c81",
+        "968ccfe7-13fa-563f-bed1-6629207401db",
+        "99dbf275-329e-5921-a973-fab133752f96",
+        "9bd82482-8464-56ab-8ff4-ea1e4de187c6",
+        "b0312f62-58ac-56ca-ab76-74741c019899",
+        "b8d36aab-f19a-5804-abca-72ebe654d81d",
+        "c630b78d-fe5c-5bfb-af13-072661ce891e",
+        "c6321532-0146-5424-a06a-503e35e8042b",
+        "ca7c4b06-863c-5414-94f7-c27d2b717e2f",
+        "cbab9d75-fbf6-5aa8-9279-12f96c2aa8d4",
+        "d2974b3e-48c6-5b77-9cce-ab9ffddafc1c",
+        "d51f47a2-ba00-5b74-b411-a5128c3b285f",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433",
+        "d9a1d3c2-4cf0-53ee-8146-106b4d7908d8",
+        "de65409f-4b60-5d3c-bc45-7b45ef38cb7f",
+        "e01bdcc9-3d45-5b8c-8a4e-a1b2b1d0646d",
+        "e4cfe47a-cff9-5b9d-aa80-2111194b4948",
+        "f1b0f10a-f9c6-502a-b7cd-729964c3d227"
+      ],
+      "relevance_note": "Requests two sections and therefore a general search."
+    },
+    {
+      "query_id": "paraphrase-01",
+      "query": "Trace the candidate's learning path and academic record.",
+      "category": "paraphrased_challenging",
+      "expected_intent": "EDUCATION_SEARCH",
+      "expected_source_sections": [
+        "education"
+      ],
+      "relevant_memory_ids": [
+        "0450d50b-852a-5cf9-b5f5-e2bf6f496be8",
+        "d7c321b4-3477-5afb-8ca0-ec0dd75ca433"
+      ],
+      "relevance_note": "Paraphrases education without using the section label."
+    },
+    {
+      "query_id": "paraphrase-02",
+      "query": "What side initiatives or portfolio builds are described?",
+      "category": "paraphrased_challenging",
+      "expected_intent": "PROJECT_SEARCH",
+      "expected_source_sections": [
+        "projects"
+      ],
+      "relevant_memory_ids": [
+        "080d9bfc-3ba8-5442-952f-45e6dbf7dfa1",
+        "0c338677-db4b-5365-a6ae-8a41f48b2dc4",
+        "ffb3e5a7-76c9-54e9-85bc-24077ff61e5e"
+      ],
+      "relevance_note": "Uses indirect wording for project work."
+    },
+    {
+      "query_id": "paraphrase-03",
+      "query": "How does the candidate's career unfold across roles?",
+      "category": "paraphrased_challenging",
+      "expected_intent": "EXPERIENCE_SEARCH",
+      "expected_source_sections": [
+        "experience"
+      ],
+      "relevant_memory_ids": [
+        "43845f64-c182-5d76-9b13-bd145c77f9e1",
+        "f403ca6d-95f0-5a3b-9766-f3721421fa56"
+      ],
+      "relevance_note": "Paraphrases work history as a career progression."
+    },
+    {
+      "query_id": "paraphrase-04",
+      "query": "Which formal learning credentials has the candidate earned?",
+      "category": "paraphrased_challenging",
+      "expected_intent": "CERTIFICATION_SEARCH",
+      "expected_source_sections": [
+        "certifications"
+      ],
+      "relevant_memory_ids": [
+        "6e23d80b-46d3-5c33-bfd6-e4a20f6e3a16",
+        "cc41bfeb-a268-5769-b371-a11d4143f9c9",
+        "d32db874-41ea-5951-ab28-e18e92884a7d"
+      ],
+      "relevance_note": "Uses credential wording instead of certification."
+    }
+  ]
+}

@@ -228,6 +228,7 @@ This is the maintained file-by-file guide to the NEXPLY repository. Each first-p
 | `tests/test_profile_owner_access_api.py` | Checks users can access only their own profile and resume data. |
 | `tests/test_profile_schema_and_sql_sync.py` | Validates profile schema conversion and the PostgreSQL mirror sync. |
 | `tests/test_postgres_profile_upserts.py` | Checks one-row-per-app-ID upserts for structured candidate profiles. |
+| `tests/test_candidate_profile_source_lookup.py` | Verifies owner-scoped PostgreSQL lookup of the Mongo source document linked to a candidate profile. |
 | `tests/test_job_preferences_api.py` | Covers preference loading/saving and the single-row-per-user contract. |
 | `tests/test_manual_profile_save_api.py` | Validates manually created profiles and their persisted resume records. |
 
@@ -451,6 +452,7 @@ This table is generated from local imports (not inferred from filenames). It sho
 | `tests/retrieval_evaluation/test_scope_validation.py` | No direct local imports; see its role above. |
 | `tests/test_account_registration.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
 | `tests/test_api_health_and_static_assets.py` | `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/api/routes/health.py`, `src/nexus/api/routes/resume/__init__.py`, `src/nexus/api/routes/resume/ai.py`, `src/nexus/api/routes/resume/extract.py`, `src/nexus/api/routes/resume/get.py`, `src/nexus/api/routes/resume/history.py`, `src/nexus/api/routes/resume/parse.py`, `src/nexus/api/routes/resume/upload.py` |
+| `tests/test_candidate_profile_source_lookup.py` | `src/nexus/storage/__init__.py`, `src/nexus/storage/postgres.py` |
 | `tests/test_concurrent_upload_idempotency.py` | `src/nexus/api/__init__.py`, `src/nexus/api/auth.py`, `src/nexus/api/main.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py`, `src/nexus/storage/__init__.py`, `src/nexus/storage/jd_repository.py`, `src/nexus/storage/mongodb.py`, `src/nexus/storage/postgres.py`, `src/nexus/storage/resume_repository.py` |
 | `tests/test_document_text_extraction.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |
 | `tests/test_education_legacy_aliases.py` | `src/nexus/api/routes/resumes.py`, `src/nexus/core/__init__.py`, `src/nexus/core/parser.py`, `src/nexus/core/prompts/resume_extraction.py`, `src/nexus/core/resume_extractor.py`, `src/nexus/core/schemas/resume.py`, `src/nexus/services/__init__.py`, `src/nexus/services/resume_service.py` |

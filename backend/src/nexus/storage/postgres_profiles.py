@@ -80,3 +80,19 @@ def get_candidate_profile(app_id: str, connect) -> dict | None:
         
     return dict(row) if row else None
 
+
+def get_candidate_profile_source_document_id(app_id: str, connect) -> str | None:
+    """Return the Mongo source document linked to this user's SQL profile."""
+    logger.info("Loading source document reference for authenticated candidate profile")
+    with connect() as connection:
+        row = connection.execute(
+            """SELECT source_document_id
+               FROM public.candidate_profiles
+               WHERE app_id = %s::uuid""",
+            (app_id,),
+        ).fetchone()
+    if not row:
+        return None
+    source_document_id = row["source_document_id"]
+    return str(source_document_id) if source_document_id is not None else None
+
